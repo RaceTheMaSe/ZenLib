@@ -92,7 +92,7 @@ static int darwinIsWholeMedia(io_service_t service)
     if (wholeMedia == NULL)
         return 0;
 
-    retval = CFBooleanGetValue((CFBooleanRef)wholeMedia);
+    retval = CFBooleanGetValue(wholeMedia);
     CFRelease(wholeMedia);
 
     return retval;

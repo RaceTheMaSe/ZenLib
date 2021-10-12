@@ -1,32 +1,33 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <inttypes.h>
+#include <cinttypes>
 #include "utils/mathlib.h"
 #include "daedalus/ZString.h"
 
 namespace ZenLoad
 {
-    enum WorldVersion : uint16_t
+    enum class WorldVersion : uint16_t
     {
         VERSION_G1_08k = 0xFC01,
         VERSION_G26fix = 0x9900
     };
 
     /**
-	 * Used by zCVobSound
-	 */
+   * Used by zCVobSound
+   */
     enum SoundMode : uint8_t
     {
-        SM_LOOPING,
+        SM_LOOPING = 0,
         SM_ONCE,
         SM_RANDOM
     };
 
     /**
-	 * Used by zCVobSound
-	 */
+   * Used by zCVobSound
+   */
     enum SoundVolType : uint8_t
     {
         SVT_SPHERE = 0,
@@ -35,27 +36,27 @@ namespace ZenLoad
 
     enum MutateType : uint8_t
     {
-        MT_NONE=0,
+        MT_NONE = 0,
         MT_TRIGGER,
         MT_UNTRIGGER,
         MT_ENABLE,
         MT_DISABLE,
-        MT_TOOGLE_ENABLED
+        MT_TOGGLE_ENABLED
     };
 
     enum MoverBehavior : uint32_t
     {
-        STATE_TOGGLE,
+        STATE_TOGGLE = 0,
         STATE_TRIGGER_CTRL,
         STATE_OPEN_TIMED,
         NSTATE_LOOP,
-        NSTATE_SINGLE_KEYS,
+        NSTATE_SINGLE_KEYS
     };
 
     enum PosLerpType : uint32_t
     {
         CURVE  = 0,
-        LINEAR = 1
+        LINEAR
     };
 
     enum SpeedType : uint32_t
@@ -74,22 +75,239 @@ namespace ZenLoad
         GOTO_KEY_FIXED_DIRECTLY = 0,
         GOTO_KEY_FIXED_ORDER,
         GOTO_KEY_NEXT,
-        GOTO_KEY_PREV,
+        GOTO_KEY_PREV
+    };
+
+    enum MotionType : uint8_t
+    {
+        MOTION_TYPE_UNDEF = 0,
+        MOTION_TYPE_SMOOTH,
+        MOTION_TYPE_LINEAR,
+        MOTION_TYPE_STEP,
+        MOTION_TYPE_SLOW,
+        MOTION_TYPE_FAST,
+        MOTION_TYPE_CUSTOM
+    };
+
+    enum FrameOfReference : uint8_t
+    {
+        FOR_WORLD = 0,
+        FOR_OBJECT
+    };
+
+    enum LoopMode : uint8_t
+    {
+        LM_NONE = 0,
+        LM_PINGPONG
+    };
+
+    enum SplineLerpMode : uint8_t
+    {
+        PATH_UNDEFINED = 0,
+        PATH,
+        PATH_IGNOREROLL,
+        PATH_ROT_SAMPLES
+    };
+
+    enum FlareType : uint8_t
+    {
+        FT_NONE = 0,
+        FT_CORONA,
+        FT_GLOW,
+        FT_FLARE
     };
 
     enum AnimMode : uint8_t
     {
-        NONE  = 0,
-        WIND  = 1,
-        WIND2 = 2
+        AM_NONE  = 0,
+        AM_WIND,
+        AM_WIND2
+    };
+
+    enum CutsceneRole : uint8_t
+    {
+        CSRequired = 0,
+        CSRdelayable,
+        CSRnonrequired
+    };
+
+    enum CSRunBehaviour : uint8_t
+    {
+        RUN_ALWAYS = 0,
+        RUN_TIMES,
+        RUN_PERHOUR,
+        RUN_PERDAY
+    };
+
+    enum class ScreenFXEventTypes : uint8_t
+    {
+        BLEND_FADE_IN = 0,
+        BLEND_FADE_OUT,
+        CINEMA_FADE_IN,
+        CINEMA_FADE_OUT,
+        FOV_MORPH
+    };
+
+    enum class ManipulateEventTypes : uint8_t
+    {
+        EV_TAKEVOB = 0,
+        EV_DROPVOB,
+        EV_THROWVOB,
+        EV_EXCHANGE,
+        EV_USEMOB,
+        EV_USEITEM,
+        EV_INSERTINTERACTITEM,
+        EV_REMOVEINTERACTITEM,
+        EV_CREATEINTERACTITEM,
+        EV_DESTROYINTERACTITEM,
+        EV_PLACEINTERACTITEM,
+        EV_EXCHANGEINTERACTITEM,
+        EV_USEMOBWITHITEM,
+        EV_CALLSCRIPT,
+        EV_EQUIPITEM,
+        EV_USEITEMTOSTATE,
+        EV_TAKEMOB,
+        EV_DROPMOB
+    };
+
+    enum class ConversationEventTypes : uint32_t
+    {
+        EV_PLAYANISOUND = 0,
+        EV_PLAYANI,
+        EV_PLAYSOUND,
+        EV_LOOKAT,
+        EV_OUTPUT,
+        EV_OUTPUTSVM,
+        EV_CUTSCENE,
+        EV_WAITTILLEND,
+        EV_ASK,
+        EV_WAITFORQUESTION,
+        EV_STOPLOOKAT,
+        EV_STOPPOINTAT,
+        EV_POINTAT,
+        EV_QUICKLOOK,
+        EV_PLAYANI_NOOVERLAY,
+        EV_PLAYANI_FACE,
+        EV_PROCESSINFOS,
+        EV_STOPPROCESSINFOS,
+        EV_OUTPUTSVM_OVERLAY,
+        EV_SNDPLAY
+    };
+
+    enum class MovementEventTypes : uint8_t
+    {
+        EV_ROBUSTTRACE = 0,
+        EV_GOTOPOS,
+        EV_GOTOVOB,
+        EV_GOROUTE,
+        EV_TURN,
+        EV_TURNTOPOS,
+        EV_TURNTOVOB,
+        EV_TURNAWAY,
+        EV_JUMP,
+        EV_SETWALKMODE,
+        EV_WHIRLAROUND,
+        EV_STANDUP,
+        EV_CANSEENPC,
+        EV_STRAFE,
+        EV_GOTOFP,
+        EV_DODGE,
+        EV_BEAMTO,
+        EV_ALIGNTOFP
+    };
+
+    enum class EventCoreTypes : uint8_t
+    {
+        TRIGGER = 0,
+        UNTRIGGER,
+        TOUCH,
+        UNTOUCH,
+        TOUCHLEVEL,
+        DAMAGE
+    };
+
+    enum class EventAttackTypes : uint8_t
+    {
+        EV_ATTACKFORWARD = 0,
+        EV_ATTACKLEFT,
+        EV_ATTACKRIGHT,
+        EV_ATTACKRUN,
+        EV_ATTACKFINISH,
+        EV_PARADE,
+        EV_AIMAT,
+        EV_SHOOTAT,
+        EV_STOPAIM,
+        EV_DEFEND
+    };
+
+    enum class CamEventTypes : uint8_t
+    {
+        EV_CAM_NOTHING = 0,
+        EV_CAM_PLAY,
+        EV_CAM_PAUSE,
+        EV_CAM_RESUME,
+        EV_CAM_STOP,
+        EV_CAM_GOTO_KEY,
+        EV_CAM_SET_DURATION,
+        EV_CAM_SET_TO_TIME
+    };
+
+    enum class CamActivateEventTypes : uint8_t
+    {
+        EV_CAM_NOTHING = 0,
+        EV_CAM_DEACTIVATE,
+        EV_CAM_SETPOSREFERENCE,
+        EV_CAM_SETTARGETREFERENCE
+    };
+
+    enum class EventMagicTypes : uint8_t
+    {
+        EV_OPEN = 0,
+        EV_CLOSE,
+        EV_MOVE,
+        EV_INVEST,
+        EV_CAST,
+        EV_SETLEVEL,
+        EV_SHOWSYMBOL,
+        EV_SETFRONTSPELL,
+        EV_CASTSPELL,
+        EV_READY,
+        EV_UNREADY
+    };
+
+    enum class EventStateTypes : uint8_t
+    {
+        EV_STARTSTATE = 0,
+        EV_WAIT,
+        EV_SETNPCTOSTATE,
+        EV_SETTIME,
+        EV_APPLYTIMEDOVERLAY
+    };
+
+    enum class EventWeaponTypes : uint8_t
+    {
+        EV_DRAWWEAPON = 0,
+        EV_DRAWWEAPON1,
+        EV_DRAWWEAPON2,
+        EV_REMOVEWEAPON,
+        EV_REMOVEWEAPON1,
+        EV_REMOVEWEAPON2,
+        EV_CHOOSEWEAPON,
+        EV_FORCEREMOVEWEAPON,
+        EV_ATTACK,
+        EV_EQUIPBESTWEAPON,
+        EV_EQUIPBESTARMOR,
+        EV_UNEQUIPWEAPONS,
+        EV_UNEQUIPARMOR,
+        EV_EQUIPARMOR
     };
 
     using SectorIndex = uint32_t;
     enum : uint32_t { SECTOR_INDEX_INVALID = uint32_t(-1) };
 
   /**
-	 * @brief Maximum amount of nodes a skeletal mesh can render
-	 */
+   * @brief Maximum amount of nodes a skeletal mesh can render
+   */
     const size_t MAX_NUM_SKELETAL_NODES = 96;
 
     struct WorldVertex
@@ -97,26 +315,26 @@ namespace ZenLoad
         ZMath::float3 Position;
         ZMath::float3 Normal;
         ZMath::float2 TexCoord;
-        uint32_t Color;
+        uint32_t      Color{};
     };
 
     struct SkeletalVertex
     {
         ZMath::float3 Normal;
         ZMath::float2 TexCoord;
-        uint32_t Color;
+        uint32_t      Color{};
         ZMath::float3 LocalPositions[4];
-        unsigned char BoneIndices[4];
-        float Weights[4];
+        unsigned char BoneIndices[4]{};
+        float         Weights[4]{};
     };
 
     struct zMAT3
     {
         float v[3][3];
 
-        ZMath::float3 getUpVector()    const { return ZMath::float3(v[0][1], v[1][1], v[2][1]); }
-        ZMath::float3 getRightVector() const { return ZMath::float3(v[0][0], v[1][0], v[2][0]); }
-        ZMath::float3 getAtVector()    const { return ZMath::float3(v[0][2], v[1][2], v[2][2]); }
+        ZMath::float3 getUpVector()    const { return {v[0][1], v[1][1], v[2][1]}; }
+        ZMath::float3 getRightVector() const { return {v[0][0], v[1][0], v[2][0]}; }
+        ZMath::float3 getAtVector()    const { return {v[0][2], v[1][2], v[2][2]}; }
 
         void setAtVector(const ZMath::float3& a)
         {
@@ -162,9 +380,9 @@ namespace ZenLoad
     };
 
     /**
-	 * @brief Base for an object parsed from a zen-file.
-	 *		  Contains a map of all properties and their values as text
-	 */
+   * @brief Base for an object parsed from a zen-file.
+   *      Contains a map of all properties and their values as text
+   */
     struct ParsedZenObject
     {
     };
@@ -183,8 +401,8 @@ namespace ZenLoad
         float       texAniFPS=0.f;
         uint8_t     texAniMapMode=0;
         std::string texAniMapDir;
-        bool        noCollDet=0;
-        bool        noLighmap=0;
+        bool        noCollDet=false;
+        bool        noLighmap=false;
         uint8_t     loadDontCollapse=0;
         std::string detailObject;
         float       detailTextureScale=0.f;
@@ -208,10 +426,6 @@ namespace ZenLoad
     {
     };
 
-    struct zCEventManagerData : public ParsedZenObject
-    {
-    };
-
     struct TriggerListEntry
     {
         std::string triggerTarget;
@@ -229,12 +443,15 @@ namespace ZenLoad
             VT_Unknown  = -1,
             VT_zCVob    = 0,
             VT_zCVobLevelCompo,
+            VT_ocDummyVobGenerator,
             VT_oCItem,
+            VT_oCNpc,
             VT_oCMOB,
             VT_oCMobInter,
             VT_oCMobDoor,
             VT_oCMobBed,
             VT_oCMobFire,
+            VT_oCMobItemSlot,
             VT_oCMobLadder,
             VT_oCMobSwitch,
             VT_oCMobWheel,
@@ -250,46 +467,70 @@ namespace ZenLoad
             VT_zCTriggerList,
             VT_zCTriggerScript,
             VT_oCTriggerChangeLevel,
-            VT_oCTriggerWorldStart,
+            VT_zCTriggerWorldStart,
+            VT_oCTriggerTeleport,
+            VT_oCCSTrigger,
             VT_zCMover,
             VT_zCVobStartpoint,
             VT_zCVobSpot,
-            VT_zCPFXControler,
+            VT_zCVobWaypoint,
+            VT_zCPFXController,
             VT_oCTouchDamage,
             VT_zCTriggerUntouch,
-            VT_zCMoverControler,
+            VT_zCZoneReverb,
+            VT_zCZoneReverbDefault,
+            VT_ocZoneFog,
+            VT_ocZoneFogDefault,
+            VT_zCZoneVobFarPlane,
+            VT_zCZoneVobFarPlaneDefault,
+            VT_zCVobAnimate,
+            VT_zCVobLensFlare,
+            VT_zCTouchAnimate,
+            VT_zCTouchAnimateSound,
+            VT_zCMoverController,
             VT_zCVobLightPreset,
+            VT_zCCSCamera,
+            VT_zCCamTraj_KeyFrame,
+            VT_zCEarthQuake,
+            VT_zCMusicControler,
+            VT_ocVisualFX,
+            VT_ocVisFX_MultiTarget,
+            VT_zCVobStair,
+            VT_zCVobScreenFX,
+            VT_zCLensFlareFX,
+            VT_zCLensFlare,
+            VT_zReference
         };
 
         EVobType      vobType = VT_zCVob;
 
         uint32_t      pack = 0;
         std::string   presetName;
-        ZMath::float3 bbox[2] = {};
-        ZMath::Matrix rotationMatrix = {};
-        zMAT3         rotationMatrix3x3 = {};
-        ZMath::Matrix worldMatrix = {};
-        ZMath::float3 position    = {};
+        ZMath::float3 bbox[2]               = {};
+        ZMath::Matrix rotationMatrix        = {};
+        zMAT3         rotationMatrix3x3     = {};
+        ZMath::Matrix worldMatrix           = {};
+        ZMath::float3 position              = {};
         std::string   vobName;
         std::string   visual;
-        bool          showVisual = false;
-        uint8_t       visualCamAlign = 0;
-        AnimMode      visualAniMode = AnimMode::NONE;
+        bool          showVisual            = false;
+        uint8_t       visualCamAlign        = 0;
+        AnimMode      visualAniMode         = AnimMode::AM_NONE;
         float         visualAniModeStrength = 0;
-        float         vobFarClipScale= 0;
-        bool          cdStatic  = false;
-        bool          cdDyn     = false;
-        bool          staticVob = false;
-        uint8_t       dynamicShadow = 0;
-        int32_t       zBias = 0;
-        bool          isAmbient = false;
+        float         vobFarClipScale       = 0;
+        bool          cdStatic              = false;
+        bool          cdDyn                 = false;
+        bool          staticVob             = false;
+        uint8_t       dynamicShadow         = 0;
+        int32_t       zBias                 = 0;
+        bool          isAmbient             = false;
 
         // References
-        size_t visualReference   = 0;
-        size_t aiReference       = 0;
-        size_t eventMgrReference = 0;
+        size_t visualReference              = 0;
+        size_t aiReference                  = 0;
+        size_t eventMgrReference            = 0;
 
-        bool   physicsEnabled = false;
+        bool   physicsEnabled               = false;
 
         struct
         {
@@ -302,7 +543,7 @@ namespace ZenLoad
             int32_t       decalAlphaFunc   = 0;
             float         decalTexAniFPS   = 0;
             uint8_t       decalAlphaWeight = 0;
-            bool          ignoreDayLight   = 0;
+            bool          ignoreDayLight   = false;
           } zCDecal;
         } visualChunk;
 
@@ -315,26 +556,28 @@ namespace ZenLoad
         struct
         {
             std::string focusName;
-            int32_t     hitpoints = 0;
-            int32_t     damage    = 0;
-            bool        moveable  = false;
-            bool        takeable  = false;
-            bool        focusOverride = false;
-            uint32_t    soundMaterial = 0;
+            int32_t     hitpoints       = 0;
+            int32_t     damage          = 0;
+            bool        moveable        = false;
+            bool        takeable        = false;
+            bool        focusOverride   = false;
+            uint32_t    soundMaterial   = 0;
             std::string visualDestroyed;
             std::string owner;
             std::string ownerGuild;
-            bool        isDestroyed = false;
+            bool        isDestroyed     = false;
         } oCMOB;
 
         struct
         {
-            int         stateNum=0;
+            int         state         = 0;
+            int         stateTarget   = 0;
+            int         stateNum      = 0;
             std::string triggerTarget;
             std::string useWithItem;
             std::string conditionFunc;
             std::string onStateFunc;
-            bool        rewind = false;
+            bool        rewind        = false;
         } oCMobInter;
 
         struct
@@ -367,10 +610,10 @@ namespace ZenLoad
             uint32_t    lightQuality  = 0;
             std::string lensflareFX;
             struct {
-              bool                  turnedOn = false;
+              bool                  turnedOn        = false;
               std::vector<float>    rangeAniScale;
-              float                 rangeAniFPS = 0;
-              bool                  rangeAniSmooth = true;
+              float                 rangeAniFPS     = 0;
+              bool                  rangeAniSmooth  = true;
               std::vector<uint32_t> colorAniList;
               float                 colorAniListFPS = true;
               bool                  colorAniSmooth  = true;
@@ -395,8 +638,8 @@ namespace ZenLoad
 
         struct
         {
-            float       sndStartTime=0.f;
-            float       sndEndTime=0.f;
+            float       sndStartTime = 0.f;
+            float       sndEndTime   = 0.f;
             std::string sndName2;
         } zCVobSoundDaytime;
 
@@ -412,10 +655,47 @@ namespace ZenLoad
 
         struct
         {
+            uint8_t  reverbPreset   = 0;
+            float    reverbWeight   = 0;
+            float    innerRangePerc = 0;
+        } zCZoneReverb;
+
+        struct
+        {
+            float fogRangeCenter = 0;
+            float innerRangePerc = 0;
+            uint32_t fogColor    = 0;
+            bool  fadeOutSky     = false;
+            bool  overrideColor  = false;
+        } zCZoneZFog;
+
+        struct
+        {
+            float farPlaneZ      = 0;
+            float innerRangePerc = 0;
+        } zCZoneVobFarPlane;
+
+        struct
+        {
+            bool startOn = false;
+        } zCVobAnimate;
+
+        struct
+        {
+            std::string lensFlareFx;
+        } zCVobLensFlare;
+
+        struct
+        {
+            std::string sfxTouch;
+        } zCTouchAnimateSound;
+
+        struct
+        {
             std::string              triggerTarget;
-            bool                     orderRelevant=false;
-            bool                     firstFalseIsFailure=false;
-            bool                     untriggerCancels=false;
+            bool                     orderRelevant       = false;
+            bool                     firstFalseIsFailure = false;
+            bool                     untriggerCancels    = false;
             std::string              triggerTargetFailure;
             std::vector<std::string> slaveVobName;
         } zCCodeMaster;
@@ -430,13 +710,13 @@ namespace ZenLoad
         struct
         {
             std::string triggerTarget;
-            uint8_t     flags            =0;
-            uint8_t     filterFlags      =0;
+            uint8_t     flags             = 0;
+            uint8_t     filterFlags       = 0;
             std::string respondToVobName;
-            int32_t     numCanBeActivated=0;
-            float       retriggerWaitSec =0;
-            float       damageThreshold  =0;
-            float       fireDelaySec     =0;
+            int32_t     numCanBeActivated = 0;
+            float       retriggerWaitSec  = 0;
+            float       damageThreshold   = 0;
+            float       fireDelaySec      = 0;
         } zCTrigger;
 
         struct
@@ -449,12 +729,12 @@ namespace ZenLoad
           std::string  triggerTarget;
           MoverMessage moverMessage = GOTO_KEY_FIXED_DIRECTLY;
           int32_t      gotoFixedKey = 0;
-        } zCMoverControler;
+        } zCMoverController;
 
         struct
         {
 
-            int32_t                       listProcess=0;
+            int32_t                       listProcess = 0;
             std::vector<TriggerListEntry> list;
         } zCTriggerList;
 
@@ -466,14 +746,14 @@ namespace ZenLoad
         struct
         {
             MoverBehavior moverBehavior=MoverBehavior::NSTATE_LOOP;
-            float         touchBlockerDamage=0;
-            float         stayOpenTimeSec=0;
-            bool          moverLocked=false;
-            bool          autoLinkEnable=false;
-            bool          autoRotate=false;
-            float         moveSpeed=0;
-            PosLerpType   posLerpType=PosLerpType::CURVE;
-            SpeedType     speedType=SpeedType::SEG_CONST;
+            float         touchBlockerDamage = 0;
+            float         stayOpenTimeSec    = 0;
+            bool          moverLocked        = false;
+            bool          autoLinkEnable     = false;
+            bool          autoRotate         = false;
+            float         moveSpeed          = 0;
+            PosLerpType   posLerpType        = PosLerpType::CURVE;
+            SpeedType     speedType          = SpeedType::SEG_CONST;
             std::vector<zCModelAniSample> keyframes;
             std::string   sfxOpenStart;
             std::string   sfxOpenEnd;
@@ -494,7 +774,7 @@ namespace ZenLoad
         struct
         {
             std::string triggerTarget;
-            bool        fireOnlyFirstTime=false;
+            bool        fireOnlyFirstTime = false;
         } oCTriggerWorldStart;
 
         struct
@@ -502,7 +782,7 @@ namespace ZenLoad
             std::string pfxName;
             bool        killVobWhenDone = true;
             bool        pfxStartOn      = true;
-        } zCPFXControler;
+        } zCPFXController;
 
         struct
         {
@@ -523,6 +803,77 @@ namespace ZenLoad
           float damageVolDownScale   = 0;
           int   damageCollType       = 0;
         } oCTouchDamage;
+
+        struct
+        {
+          float      time                = 0.f;
+          float      angleRollDeg        = 0.f;
+          float      camFOVScale         = 1.f;
+          MotionType motionType          = MotionType::MOTION_TYPE_SLOW;
+          MotionType motionTypeFOV       = MotionType::MOTION_TYPE_SMOOTH;
+          MotionType motionTypeRoll      = MotionType::MOTION_TYPE_SMOOTH;
+          MotionType motionTypeTimeScale = MotionType::MOTION_TYPE_SMOOTH;
+          struct
+          {
+            float tension     = 0;
+            float bias        = 0;
+            float continuity  = 0;
+            float timeScale   = 1.f;
+            bool  timeIsFixed = false;
+          } details;
+          ZMath::Matrix originalPose;
+        } zCCamTraj_KeyFrame;
+
+        struct
+        {
+          FrameOfReference camTrj                         = FrameOfReference::FOR_WORLD;
+          FrameOfReference targetTrj                      = FrameOfReference::FOR_WORLD;
+          LoopMode         loopMode                       = LoopMode::LM_NONE;
+          SplineLerpMode   splLerpMode                    = SplineLerpMode::PATH;
+          bool             ignoreFORVobRotCam             = false;
+          bool             ignoreFORVobRotTarget          = false;
+          bool             adaptToSurroundings            = false;
+          bool             easeToFirstKey                 = false;
+          bool             easeFromLastKey                = false;
+          float            totalTime                      = 0;
+          std::string      autoCamFocusVobName;
+          bool             autoCamPlayerMovable           = false;
+          bool             autoCamUntriggerOnLastKey      = false;
+          float            autoCamUntriggerOnLastKeyDelay = 0.f;
+          int              sleepMode                      = 0;
+          float            nextOnTimer                    = 0.f;
+          bool             paused                         = false;
+          bool             started                        = false;
+          bool             gotoTimeMode                   = false;
+          float            csTime                         = 0.f;
+          std::vector<zCVobData> camSpline;
+          std::vector<zCVobData> targetSpline;
+        } zCCSCamera;
+
+        struct
+        {
+          float         radius      = 0.f;
+          float         timeSec     = 0.f;
+          ZMath::float3 amplitudeCM = {};
+        } zCEarthQuake;
+
+        struct
+        {
+          std::string texName;
+          FlareType   type      = FT_CORONA;
+          float       size      = 0.f;
+          float       alpha     = 0.f;
+          float       rangeMin  = 0.f;
+          float       rangeMax  = 0.f;
+          float       posScale  = 0.f;
+          float       fadeScale = 0.f;
+        } zCFlare;
+
+        struct
+        {
+          std::string name;
+          float       fadeScale = 0.f;
+        } zcLensFlareFX;
 
         std::vector<zCVobData> childVobs;
     };
@@ -559,17 +910,19 @@ namespace ZenLoad
             INVALID_NODE = static_cast<uint32_t>(-1)
         };
 
-        ZMath::float4 plane;
-        uint32_t front=zCBspNode::INVALID_NODE;
-        uint32_t back =zCBspNode::INVALID_NODE;
-        uint32_t parent=zCBspNode::INVALID_NODE;
+        ZMath::float4 plane{};
+        uint32_t front  = zCBspNode::INVALID_NODE;
+        uint32_t back   = zCBspNode::INVALID_NODE;
+        uint32_t parent = zCBspNode::INVALID_NODE;
 
-        ZMath::float3 bbox3dMin, bbox3dMax;
+        ZMath::float3 bbox3dMin{}, bbox3dMax{};
 
-        size_t treePolyIndex=size_t(-1);
-        size_t numPolys=size_t(-1);
+        size_t treePolyIndex = size_t(-1);
+        size_t numPolys      = size_t(-1);
+        bool   lodFlag       = false;
+        ZMath::float3 light{};
 
-        bool isLeaf()
+        bool isLeaf() const
         {
             return front == INVALID_NODE && back == INVALID_NODE;
         }
@@ -586,114 +939,235 @@ namespace ZenLoad
         /**
          * Whether this tree is an indoor or outdoor location
          */
-        TreeMode               mode=TreeMode::Indoor;
+        TreeMode               mode = TreeMode::Indoor;
 
         std::vector<zCBspNode> nodes;
-        std::vector<uint32_t > leafIndices;
+        std::vector<uint32_t>  leafIndices;
         std::vector<uint32_t>  treePolyIndices;
         std::vector<uint32_t>  portalPolyIndices;
 
         std::vector<zCSector>  sectors;
         std::vector<zCPortal>  portals;
+
+        uint32_t               version;
     };
 
     struct zCBspTreeData2
     {
         enum TreeMode
         {
-            Indoor = 0,
+            Indoor  = 0,
             Outdoor = 1
         };
 
         /**
-		 * Whether this tree is an indoor or outdoor location
-		 */
+     * Whether this tree is an indoor or outdoor location
+     */
         TreeMode mode;
 
         std::vector<zCBspNode> nodes;
-        std::vector<uint8_t> leafIndices;
-        std::vector<uint16_t> treePolyIndices;
+        std::vector<uint8_t>   leafIndices;
+        std::vector<uint16_t>  treePolyIndices;
     };
     //#pragma pack(pop)
 
-    struct oCMsgConversationData : public ParsedZenObject
+    // the various message types
+    struct zCEventMessage : public ParsedZenObject
     {
-        uint32_t          subType = 0;
-        Daedalus::ZString text;
-        Daedalus::ZString name;
+        enum class EventMsgType : uint8_t
+        {
+          MT_Plain = 0,
+          MT_oCMobMsg,
+          MT_Common,
+          MT_Core,
+          MT_Mover,
+          MT_MusicController,
+          MT_Npc,
+          MT_MsgCutscene,
+          MT_MsgCSCamera,
+          MT_MsgCSCameraActivate,
+          MT_MsgAttack,
+          MT_MsgDamage,
+          MT_MsgMagic,
+          MT_MsgState,
+          MT_MsgUseItem,
+          MT_MsgWeapon,
+          MT_MsgMovement,
+          MT_MsgConversation,
+          MT_MsgManipulate,
+          MT_ScreenFX
+        };
+        EventMsgType type    = EventMsgType::MT_Plain;
+        uint32_t     subType = 0;
+    };
+    
+    struct oCMobMsg : public zCEventMessage {};
+    struct zCEvMsgCutscene : public zCEventMessage {};
+    struct zCEventCommon : public zCEventMessage {};
+    struct zCEventCore : public zCEventMessage
+    {
+      float    damage     = 0.f;
+      uint32_t damageType = 0;
     };
 
-    struct zCCSRoleData : public ParsedZenObject
+    struct zCEventMover: public zCEventMessage {};
+    struct zCEventMusicControler : public zCEventMessage {};
+    struct zCCSCamera_EventMsg : public zCEventMessage
     {
-        bool mustBeAlive;
-        std::string roleName;
-        uint8_t roleType;
+        float    time   = 0.f;
+        uint32_t key    = 0;
+        uint32_t kfType = 0;
     };
 
-    struct zCCSBlockSyncData : public ParsedZenObject
+    struct zCCSCamera_EventMsgActivate : public zCEventMessage
     {
-        std::vector<uint32_t> roleAss;
+        std::string refVobName = {};
     };
 
-    struct zCCSAtomicBlockData : public ParsedZenObject
+    struct oCNpcMessage : public zCEventMessage
     {
-        oCMsgConversationData command;
+        uint32_t      targetMode    = 0;
+        std::string   targetVobName = {};
+        std::string   targetName    = {};
+        ZMath::float3 targetPos     = {};
+        float         angle         = 0.f;
+        uint32_t      number        = 0;
     };
 
-    struct zCCSBlockData : public ParsedZenObject
+    struct oCMsgAttack : public oCNpcMessage
     {
-        std::string blockName;
-
-        // This structure is different in the original files, but this is the only
-        // configuration happening while loading
-        zCCSAtomicBlockData atomicBlockData;
+        uint32_t combo = 0;
     };
 
-    /*struct zCCutsceneData
-	{
-		zCCSPropsData props;
-		std::vector<zCCSRoleData> roles;
-		std::vector<zCVobData> roleVobs;
-		zCVobData mainRoleVob;
-	};*/
-
-    /*struct zCEventManagerData
-	{
-		bool cleared;
-		bool active;
-		zCCutsceneData cutsceneData;
-	};*/
-
-    struct zCCSLibData : public ParsedZenObject
+    struct oCMsgConversation : public oCNpcMessage
     {
-        std::vector<zCCSAtomicBlockData> blocks;  // Gothic is only using atomic blocks, as it seems
+        Daedalus::ZString text = {};
+        Daedalus::ZString name = {};
+    };
+
+    struct oCMsgDamage : public oCNpcMessage {};
+    struct oCMsgMagic : public oCNpcMessage
+    {
+        uint32_t what         = 0;
+        uint32_t level        = 0;
+        bool     removeSymbol = false;
+    };
+
+    struct oCMsgManipulate : public oCNpcMessage
+    {
+        std::string schemeName  = {};
+        int         targetState = 0;
+    };
+
+    struct oCMsgMovement : public oCNpcMessage {};
+
+    struct oCMsgState : public oCNpcMessage {};
+    struct oCMsgUseItem : public oCNpcMessage {};
+    struct oCMsgWeapon : public oCNpcMessage {};
+    struct zCEventScreenFX : public zCEventMessage
+    {
+        float    duration = 0.f;
+        uint32_t color    = 0;
+        float    fovDeg   = 0.f;
+    };
+
+    struct zCCSRole : public ParsedZenObject
+    {
+        bool         mustBeAlive = false;
+        std::string  roleName    = {};
+        CutsceneRole roleType    = CutsceneRole::CSRequired;
+        // integratedVob
+    };
+
+    struct zCCSRoleVob : public zCVobData
+    {
+    };
+
+    struct zCCSBlockSync : public ParsedZenObject
+    {
+        std::vector<uint32_t> roleAss = {};
+    };
+
+    struct zCCSAtomicBlock : public ParsedZenObject
+    {
+        float          time         = 0.f;
+        zCEventMessage command;
+        bool           synchronized = false;
+    };
+
+    struct zCCSBlock : public ParsedZenObject
+    {
+        std::string                  blockName = {};
+        std::vector<float>           time;
+        std::vector<ParsedZenObject> syncBlocks; // FIXME: those have the time values ... to unify this, the parser has to be specialized / optimized / reworked around cssyncblock, child sync block and atomic block nesting
+        std::vector<zCCSAtomicBlock> atomicBlocks;
+    };
+
+    struct zCCSSyncBlock : public zCCSBlock
+    {
+        std::vector<zCCSAtomicBlock> atomicSyncBlocks;
+        std::vector<uint32_t>        roleAss;
+    };
+
+    struct zCCSProps
+    {
+        bool           globalCutscene    = false;
+        bool           csLoop            = false;
+        bool           hasToBeTriggered  = false;
+        float          distance          = 500.f;
+        float          range             = 2000.f;
+        uint32_t       numLockedBlocks   = 0;
+        CSRunBehaviour runBehaviour      = CSRunBehaviour::RUN_ALWAYS;
+        uint32_t       runBehaviourValue = 0;
+        std::string    stageName         = {};
+        std::string    scriptFuncOnStop;
+    };
+
+    struct zCCutscene : public zCCSBlock
+    {
+        zCCSProps                  props;
+        std::vector<zCCSRole>      roles;
+        std::vector<zCCSRoleVob>   roleVobs;
+        zCVobData                  mainRoleVob;
+    };
+
+    struct zCEventManagerData : public ParsedZenObject
+    {
+        bool       cleared;
+        bool       active;
+        zCCutscene cutsceneData;
+    };
+
+    struct zCCSLibData : public zCCSBlock
+    {
+        uint32_t numItems = 0;
     };
 
     struct zCWaypointData : public ParsedZenObject
     {
-        std::string wpName;
-        int32_t waterDepth;
-        bool underWater;
+        std::string   wpName;
+        int32_t       waterDepth;
+        bool          underWater;
         ZMath::float3 position;
         ZMath::float3 direction;
     };
 
     struct zCWayNetData : public ParsedZenObject
     {
-        uint32_t waynetVersion;
-        std::vector<zCWaypointData> waypoints;
+        uint32_t                               waynetVersion;
+        std::vector<zCWaypointData>            waypoints;
         std::vector<std::pair<size_t, size_t>> edges;
     };
 
     /**
-	* @brief All kinds of information found in a oCWorld
-	*/
+  * @brief All kinds of information found in a oCWorld
+  */
     struct oCWorldData : public ParsedZenObject
     {
         std::vector<zCVobData> rootVobs;
-        zCWayNetData waynet;
-        zCBspTreeData bspTree;
-        size_t numVobsTotal;
+        zCWayNetData           waynet       = {};
+        zCBspTreeData          bspTree      = {};
+        size_t                 numVobsTotal = 0;
     };
 
 #pragma pack(push, 1)
@@ -712,59 +1186,66 @@ namespace ZenLoad
     };
 
     /**
-	 * @brief Merged flags-struct to contain all flags from all versions of the files
-	 */
+   * @brief Merged flags-struct to contain all flags from all versions of the files
+   */
     struct PolyFlags
     {
-        uint8_t portalPoly : 2;
-        uint8_t occluder : 1;
-        uint8_t sectorPoly : 1;
-        uint8_t mustRelight : 1;
+        uint8_t portalPoly          : 2;
+        uint8_t occluder            : 1;
+        uint8_t sectorPoly          : 1;
+        uint8_t mustRelight         : 1;
         uint8_t portalIndoorOutdoor : 1;
-        uint8_t ghostOccluder : 1;
-        uint8_t noDynLightNear : 1;
-        uint16_t sectorIndex : 16;
-        uint8_t lodFlag : 1;
-        uint8_t normalMainAxis : 2;
+        uint8_t ghostOccluder       : 1;
+        uint8_t noDynLightNear      : 1;
+        uint16_t sectorIndex        :16;
+        uint8_t lodFlag             : 1;
+        uint8_t normalMainAxis      : 2;
     };
 
     struct PolyFlags2_6fix
     {
-        uint8_t portalPoly : 2;
-        uint8_t occluder : 1;
-        uint8_t sectorPoly : 1;
-        uint8_t mustRelight : 1;
+        uint8_t portalPoly          : 2;
+        uint8_t occluder            : 1;
+        uint8_t sectorPoly          : 1;
+        uint8_t mustRelight         : 1;
         uint8_t portalIndoorOutdoor : 1;
-        uint8_t ghostOccluder : 1;
-        uint8_t noDynLightNear : 1;
-        uint16_t sectorIndex : 16;
+        uint8_t ghostOccluder       : 1;
+        uint8_t noDynLightNear      : 1;
+        uint16_t sectorIndex        :16;
 
-        PolyFlags2_6fix() {}
-        PolyFlags2_6fix(const PolyFlags& p)
-        {
-            portalPoly = p.portalPoly;
-            occluder = p.occluder;
-            sectorPoly = p.sectorPoly;
-            mustRelight = p.mustRelight;
-            portalIndoorOutdoor = p.portalIndoorOutdoor;
-            ghostOccluder = p.ghostOccluder;
-            noDynLightNear = p.noDynLightNear;
-            sectorIndex = p.sectorIndex;
-        }
+        PolyFlags2_6fix() 
+        : portalPoly(0),
+          occluder(0),
+          sectorPoly(0),
+          mustRelight(0),
+          portalIndoorOutdoor(0),
+          ghostOccluder(0),
+          noDynLightNear(0),
+          sectorIndex(0) { }
+
+        PolyFlags2_6fix(const PolyFlags& p) 
+        : portalPoly(p.portalPoly),
+          occluder(p.occluder),
+          sectorPoly(p.sectorPoly),
+          mustRelight(p.mustRelight),
+          portalIndoorOutdoor(p.portalIndoorOutdoor), 
+          ghostOccluder(p.ghostOccluder),
+          noDynLightNear(p.noDynLightNear),
+          sectorIndex(p.sectorIndex) { }
 
         PolyFlags generify() const
         {
-            PolyFlags p;
+            PolyFlags p{};
             memset(&p, 0, sizeof(p));
 
-            p.portalPoly = portalPoly;
-            p.occluder = occluder;
-            p.sectorPoly = sectorPoly;
-            p.mustRelight = mustRelight;
+            p.portalPoly          = portalPoly;
+            p.occluder            = occluder;
+            p.sectorPoly          = sectorPoly;
+            p.mustRelight         = mustRelight;
             p.portalIndoorOutdoor = portalIndoorOutdoor;
-            p.ghostOccluder = ghostOccluder;
-            p.noDynLightNear = noDynLightNear;
-            p.sectorIndex = sectorIndex;
+            p.ghostOccluder       = ghostOccluder;
+            p.noDynLightNear      = noDynLightNear;
+            p.sectorIndex         = sectorIndex;
 
             return p;
         }
@@ -772,41 +1253,48 @@ namespace ZenLoad
 
     struct PolyFlags1_08k
     {
-        uint8_t portalPoly : 2;
-        uint8_t occluder : 1;
-        uint8_t sectorPoly : 1;
-        uint8_t lodFlag : 1;
+        uint8_t portalPoly          : 2;
+        uint8_t occluder            : 1;
+        uint8_t sectorPoly          : 1;
+        uint8_t lodFlag             : 1;
         uint8_t portalIndoorOutdoor : 1;
-        uint8_t ghostOccluder : 1;
-        uint8_t normalMainAxis : 2;
-        uint16_t sectorIndex : 16;
+        uint8_t ghostOccluder       : 1;
+        uint8_t normalMainAxis      : 2;
+        uint16_t sectorIndex        :16;
 
-        PolyFlags1_08k() {}
+        PolyFlags1_08k()
+        : portalPoly(0),
+          occluder(0),
+          sectorPoly(0),
+          lodFlag(0),
+          portalIndoorOutdoor(0),
+          ghostOccluder(0),
+          normalMainAxis(0),
+          sectorIndex(0) { }
+
         PolyFlags1_08k(const PolyFlags& p)
-        {
-            portalPoly = p.portalPoly;
-            occluder = p.occluder;
-            sectorPoly = p.sectorPoly;
-            lodFlag = p.lodFlag;
-            portalIndoorOutdoor = p.portalIndoorOutdoor;
-            ghostOccluder = p.ghostOccluder;
-            normalMainAxis = p.normalMainAxis;
-            sectorIndex = p.sectorIndex;
-        }
+        : portalPoly(p.portalPoly),
+          occluder(p.occluder),
+          sectorPoly(p.sectorPoly),
+          lodFlag(p.lodFlag),
+          portalIndoorOutdoor(p.portalIndoorOutdoor), 
+          ghostOccluder(p.ghostOccluder),
+          normalMainAxis(p.normalMainAxis),
+          sectorIndex(p.sectorIndex) { }
 
         PolyFlags generify() const
         {
-            PolyFlags p;
+            PolyFlags p{};
             memset(&p, 0, sizeof(p));
 
-            p.portalPoly = portalPoly;
-            p.occluder = occluder;
-            p.sectorPoly = sectorPoly;
-            p.lodFlag = lodFlag;
+            p.portalPoly          = portalPoly;
+            p.occluder            = occluder;
+            p.sectorPoly          = sectorPoly;
+            p.lodFlag             = lodFlag;
             p.portalIndoorOutdoor = portalIndoorOutdoor;
-            p.ghostOccluder = ghostOccluder;
-            p.normalMainAxis = normalMainAxis;
-            p.sectorIndex = sectorIndex;
+            p.ghostOccluder       = ghostOccluder;
+            p.normalMainAxis      = normalMainAxis;
+            p.sectorIndex         = sectorIndex;
 
             return p;
         }
@@ -814,68 +1302,68 @@ namespace ZenLoad
 
     struct zTMSH_FeatureChunk
     {
-        float uv[2];
-        uint32_t lightStat;
+        float uv[2]{};
+        uint32_t lightStat{};
         ZMath::float3 vertNormal;
     };
 
 #pragma pack(pop)
 
     /**
-	* @brief Information about a triangle in the World. Contains whether the triangle 
-	*		  belongs to an outside/inside location, the static lighting colors of the edges,
-	*		  material-information and to which sector this belongs, amongst others
-	*/
+  * @brief Information about a triangle in the World. Contains whether the triangle 
+  *      belongs to an outside/inside location, the static lighting colors of the edges,
+  *      material-information and to which sector this belongs, amongst others
+  */
     struct WorldTriangle
     {
         /**
-		* @brief Returns whether this triangle is outside or inside
-		*/
+    * @brief Returns whether this triangle is outside or inside
+    */
         bool isOutside() const { return !flags.sectorPoly; }
 
         /**
-		* @brief Returns the interpolated lighting value for the given position on the triangle
-		*/
+    * @brief Returns the interpolated lighting value for the given position on the triangle
+    */
 
-        ZMath::float4 interpolateLighting(const ZMath::float3& position) const
+        ZMath::float4 interpolateLighting(const ZMath::float3& /*position*/) const
         {
             /*float u,v,w;
-			ZMath::barycentric(position, vertices[0].Position, vertices[1].Position, vertices[2].Position, u, v, w);
+      ZMath::barycentric(position, vertices[0].Position, vertices[1].Position, vertices[2].Position, u, v, w);
 
-			ZMath::float4 c[3];
-			c[0].fromABGR8(vertices[0].Color);
-			c[1].fromABGR8(vertices[1].Color);
-			c[2].fromABGR8(vertices[2].Color);
+      ZMath::float4 c[3];
+      c[0].fromABGR8(vertices[0].Color);
+      c[1].fromABGR8(vertices[1].Color);
+      c[2].fromABGR8(vertices[2].Color);
 
-			return u * c[0] + v * c[1] + w * c[2];*/
+      return u * c[0] + v * c[1] + w * c[2];*/
 
-            return ZMath::float4(1, 1, 1, 1);  // TODO: Implementation missing without GLM
+            return {1, 1, 1, 1};  // TODO: Implementation missing without GLM
         }
 
         /**
 		* @brief Flags taken from the original ZEN-File
 		*/
-        PolyFlags flags;
+        PolyFlags flags{};
 
         /**
-		 * @brief Index to the lightmap stored in the zCMesh
-		 */
-        int16_t lightmapIndex;
+     * @brief Index to the lightmap stored in the zCMesh
+     */
+        int16_t lightmapIndex = -1;
 
         /**
 		* @brief Vertices belonging to this triangle
 		*/
-        WorldVertex vertices[3];
+        WorldVertex vertices[3]{};
 
         /**
-		* @brief Index of submesh correlated with this triangle
-		*/
-        int16_t submeshIndex;
+    * @brief Index of submesh correlated with this triangle
+    */
+        int16_t submeshIndex = -1;
     };
 
     /**
-	* @brief Simple generic packed mesh, containing all useful information of a (lod-level of) zCMesh and zCProgMeshProto
-	*/
+  * @brief Simple generic packed mesh, containing all useful information of a (lod-level of) zCMesh and zCProgMeshProto
+  */
     // FIXME: Probably move this to renderer-package
     struct PackedMesh
     {
@@ -938,7 +1426,7 @@ namespace ZenLoad
 
     struct zTPlane
     {
-        float distance;
+        float distance{};
         ZMath::float3 normal;
     };
 #pragma pack(pop)
@@ -947,7 +1435,7 @@ namespace ZenLoad
     {
         ZMath::float3 m_Normal;
         ZMath::float2 m_Texcoord;
-        uint16_t m_VertexIndex;
+        uint16_t m_VertexIndex{};
     };
 
     struct zTriangle
@@ -969,7 +1457,7 @@ namespace ZenLoad
     struct zTNodeWedgeNormal
     {
         ZMath::float3 m_Normal;
-        int m_NodeIndex;
+        int m_NodeIndex{};
     };
 
     struct zTLODParams
@@ -1000,11 +1488,11 @@ namespace ZenLoad
     {
         // Weight and position of the vertex.
         // This vertexposition is in the local space of the joint-Matrix!
-        float weight;
+        float weight{};
         ZMath::float3 localVertexPosition;
 
         // Nodeindex this belongs to
-        unsigned char nodeIndex;
+        unsigned char nodeIndex{};
     };
 #pragma pack(pop)
 
@@ -1021,6 +1509,6 @@ namespace ZenLoad
         zMDL_EVENT_PFX_STOP,
         zMDL_EVENT_SETMESH,
         zMDL_EVENT_MM_STARTANI,
-        zMDL_EVENT_CAM_TREMOR,
+        zMDL_EVENT_CAM_TREMOR
     };
 }  // namespace ZenLoad

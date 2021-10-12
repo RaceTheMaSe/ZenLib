@@ -6,7 +6,7 @@
 namespace ZenLoad
 {
     static const float SAMPLE_ROT_BITS = float(1 << 16) - 1.0f;
-    static const float SAMPLE_ROT_SCALER = (float(1.0f) / SAMPLE_ROT_BITS) * 2.0f * ZMath::Pi;
+    //static const float SAMPLE_ROT_SCALER = (float(1.0f) / SAMPLE_ROT_BITS) * 2.0f * ZMath::Pi;
     static const float SAMPLE_QUAT_SCALER = (1.0f / SAMPLE_ROT_BITS) * 2.1f;
     static const uint16_t SAMPLE_QUAT_MIDDLE = (1 << 15) - 1;
 
@@ -20,7 +20,7 @@ namespace ZenLoad
         if (m_Zen.getSeek() >= m_Zen.getFileSize())
             return CHUNK_EOF;
 
-        BinaryChunkInfo chunkInfo;
+        BinaryChunkInfo chunkInfo{};
         m_Zen.readStructure(chunkInfo);
 
         // store position after header so that we can skip the chunk
@@ -55,7 +55,7 @@ namespace ZenLoad
         m_Header.fpsRateSource = m_Zen.readBinaryFloat();
         m_Header.samplePosRangeMin = m_Zen.readBinaryFloat();
         m_Header.samplePosScaler = m_Zen.readBinaryFloat();
-        m_Zen.readBinaryRaw(m_Header.aniBBox, sizeof(m_Header.aniBBox));
+        m_Zen.readBinaryRaw((ZMath::float3*)m_Header.aniBBox, sizeof(m_Header.aniBBox));
         m_Header.nextAniName = m_Zen.readLine(true);
     }
 
@@ -68,9 +68,9 @@ namespace ZenLoad
 
     static void SampleUnpackQuat(const uint16_t* in, ZMath::float4& out)
     {
-        out.x = (int(in[0]) - SAMPLE_QUAT_MIDDLE) * SAMPLE_QUAT_SCALER;
-        out.y = (int(in[1]) - SAMPLE_QUAT_MIDDLE) * SAMPLE_QUAT_SCALER;
-        out.z = (int(in[2]) - SAMPLE_QUAT_MIDDLE) * SAMPLE_QUAT_SCALER;
+        out.x = (float)(int(in[0]) - SAMPLE_QUAT_MIDDLE) * SAMPLE_QUAT_SCALER;
+        out.y = (float)(int(in[1]) - SAMPLE_QUAT_MIDDLE) * SAMPLE_QUAT_SCALER;
+        out.z = (float)(int(in[2]) - SAMPLE_QUAT_MIDDLE) * SAMPLE_QUAT_SCALER;
 
         float len_q = out.x * out.x + out.y * out.y + out.z * out.z;
 
@@ -100,10 +100,10 @@ namespace ZenLoad
 
         for (size_t i = 0; i < numSamples; i++)
         {
-            zTMdl_AniSample sample;
+            zTMdl_AniSample sample{};
             m_Zen.readBinaryRaw(&sample, sizeof(zTMdl_AniSample));
-            SampleUnpackTrans(sample.position, m_Samples[i].position, m_Header.samplePosScaler, m_Header.samplePosRangeMin);
-            SampleUnpackQuat(sample.rotation, m_Samples[i].rotation);
+            SampleUnpackTrans((uint16_t*)sample.position, m_Samples[i].position, m_Header.samplePosScaler, m_Header.samplePosRangeMin);
+            SampleUnpackQuat((uint16_t*)sample.rotation, m_Samples[i].rotation);
         }
     }
 

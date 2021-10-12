@@ -36,16 +36,16 @@ namespace ZenLoad
             int startFrame, endFrame;
         };
 
-        zCModelPrototype() {}
+        zCModelPrototype() = default;
 
         /**
-		 * @brief Loads the mesh from the given VDF-Archive
-		 */
+     * @brief Loads the mesh from the given VDF-Archive
+     */
         zCModelPrototype(const std::string& fileName, const VDFS::FileIndex& fileIndex);
 
         /**
          * @brief Reads the mesh-object from the given binary stream
-         * @param fromZen Whether this mesh is supposed to be read from a zenfile. In this case, information about the binary chunk is also read.
+         * @param parser ZenParser object
          */
         void readObjectData(ZenParser& parser);
 

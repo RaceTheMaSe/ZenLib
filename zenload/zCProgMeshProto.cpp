@@ -49,13 +49,13 @@ zCProgMeshProto::zCProgMeshProto(const std::string& fileName, const VDFS::FileIn
 
     if (data.empty())
     {
+        LogInfo() << "Failed to find progMesh " << fileName;
         return;  // TODO: Throw an exception or something
     }
 
     try
     {
         // Create parser from memory
-        // FIXME: There is an internal copy of the data here. Optimize!
         ZenLoad::ZenParser parser(data.data(), data.size());
 
         readObjectData(parser);
@@ -73,7 +73,7 @@ zCProgMeshProto::zCProgMeshProto(const std::string& fileName, const VDFS::FileIn
 void zCProgMeshProto::readObjectData(ZenParser& parser)
 {
     // Information about a single chunk
-    BinaryChunkInfo chunkInfo;
+    BinaryChunkInfo chunkInfo{};
 
     bool doneReadingChunks = false;
     while (!doneReadingChunks && parser.getSeek() <= parser.getFileSize())
@@ -88,9 +88,9 @@ void zCProgMeshProto::readObjectData(ZenParser& parser)
             {
                 uint16_t version = parser.readBinaryWord();
                 /*if(version != zCPROGMESH_FILE_VERS_G2)
-				{
-					LogWarn() << "Unsupported zCProgMeshProto-Version: " << version;
-				}*/
+        {
+          LogWarn() << "Unsupported zCProgMeshProto-Version: " << version;
+        }*/
 
                 // Read data-pool
                 uint32_t dataSize = parser.readBinaryDWord();
@@ -102,7 +102,7 @@ void zCProgMeshProto::readObjectData(ZenParser& parser)
                 uint8_t numSubmeshes = parser.readBinaryByte();
 
                 // Read data offsets for the main position/normal-list
-                MeshOffsetsMain mainOffsets;
+                MeshOffsetsMain mainOffsets{};
                 parser.readStructure(mainOffsets);
 
                 // Read offsets to indices data
@@ -118,7 +118,7 @@ void zCProgMeshProto::readObjectData(ZenParser& parser)
                 //  - String - Name
                 //  - zCMaterial-Chunk
 
-                ZenParser p2(parser.getDataPtr(), parser.getRamainBytes());
+                ZenParser p2(parser.getDataPtr(), parser.getRemainBytes());
                 p2.readHeader();
 
                 // Read every stored material
@@ -234,23 +234,18 @@ void zCProgMeshProto::readObjectData(ZenParser& parser)
  */
 void ZenLoad::zCProgMeshProto::packVertices(std::vector<WorldVertex>& vxs, std::vector<uint32_t>& ixs, uint32_t indexStart, std::vector<uint32_t>& submeshIndexStarts, float scale) const
 {
-    for (size_t s = 0; s < m_SubMeshes.size(); s++)
+    for (const auto & sm : m_SubMeshes)
     {
-        const SubMesh& sm = m_SubMeshes[s];
-
-        uint32_t meshVxStart = uint32_t(vxs.size());
+         auto meshVxStart = uint32_t(vxs.size());
 
         // Get data
-        for (size_t i = 0; i < sm.m_WedgeList.size(); i++)
+        for (const auto & wedge : sm.m_WedgeList)
         {
-            const zWedge& wedge = sm.m_WedgeList[i];
-
-            WorldVertex v;
+            WorldVertex v{};
             v.Position = m_Vertices[wedge.m_VertexIndex] * scale;
             v.Normal   = wedge.m_Normal;
             v.TexCoord = wedge.m_Texcoord;
-            //v.TexCoord2 = float2(0,0);
-            v.Color = 0xFFFFFFFF;  // TODO: Apply color from material!
+            v.Color = sm.m_Material.color;
             vxs.push_back(v);
         }
 
@@ -258,12 +253,11 @@ void ZenLoad::zCProgMeshProto::packVertices(std::vector<WorldVertex>& vxs, std::
         submeshIndexStarts.push_back(uint32_t(ixs.size()));
 
         // And get the indices
-        for (size_t i = 0; i < sm.m_TriangleList.size(); i++)
+        for (auto i : sm.m_TriangleList)
         {
-            //for(int j=2;j>=0;j--)
-            for (int j = 0; j < 3; j++)
+            for (unsigned short & m_Wedge : i.m_Wedges)
             {
-                ixs.push_back((sm.m_TriangleList[i].m_Wedges[j])  // Take wedge-index of submesh
+                ixs.push_back(m_Wedge  // Take wedge-index of submesh
                               + indexStart                        // Add our custom offset
                               + meshVxStart);                     // And add the starting location of the vertices for this submesh
             }
@@ -305,13 +299,11 @@ void zCProgMeshProto::packMesh(PackedMesh& mesh, bool noVertexId) const {
 
     pack.material = sm.m_Material;
 
-    for(size_t i=0; i<sm.m_WedgeList.size(); ++i) {
-      const zWedge& wedge = sm.m_WedgeList[i];
-
+    for(const auto & wedge : sm.m_WedgeList) {
       vbo->Position = m_Vertices[wedge.m_VertexIndex];
       vbo->Normal   = wedge.m_Normal;
       vbo->TexCoord = wedge.m_Texcoord;
-      vbo->Color    = 0xFFFFFFFF;  // TODO: Apply color from material!
+      vbo->Color    = sm.m_Material.color;
       ++vbo;
 
       if(!noVertexId) {
@@ -322,13 +314,13 @@ void zCProgMeshProto::packMesh(PackedMesh& mesh, bool noVertexId) const {
 
     pack.indexOffset = meshIxStart;
     pack.indexSize   = sm.m_TriangleList.size()*3;
-    meshIxStart += sm.m_TriangleList.size()*3;
+    meshIxStart += (uint32_t)sm.m_TriangleList.size()*3;
 
     // And get the indices
     // pack.indices.resize(3*sm.m_TriangleList.size());
-    for(size_t i=0; i<sm.m_TriangleList.size(); ++i) {
-      for(int j=0; j<3; ++j) {
-        uint32_t id = sm.m_TriangleList[i].m_Wedges[j] // Take wedge-index of submesh
+    for(auto i : sm.m_TriangleList) {
+      for(unsigned short m_Wedge : i.m_Wedges) {
+        uint32_t id = m_Wedge // Take wedge-index of submesh
                       + meshVxStart;                   // And add the starting location of the vertices for this submesh
         *ibo = id;
         ++ibo;

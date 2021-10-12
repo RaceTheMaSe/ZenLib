@@ -1,5 +1,6 @@
 #include "zCMesh.h"
 
+#include <cstdint>
 #include <map>
 #include <string>
 
@@ -40,13 +41,13 @@ zCMesh::zCMesh(const std::string& fileName, VDFS::FileIndex& fileIndex)
 
     if (data.empty())
     {
+        LogInfo() << "Failed to find mesh " << fileName;
         return;  // TODO: Throw an exception or something
     }
 
     try
     {
         // Create parser from memory
-        // FIXME: There is an internal copy of the data here. Optimize!
         ZenLoad::ZenParser parser(data.data(), data.size());
 
         // .MSH-Files are just saved zCMeshes
@@ -60,95 +61,14 @@ zCMesh::zCMesh(const std::string& fileName, VDFS::FileIndex& fileIndex)
 }
 
 /**
- * Helper structs for version independend loading of polygon data
- */
-template <typename FT>
-struct polyData1
-{
-    int16_t materialIndex;  // -1 if none
-    int16_t lightmapIndex;  // -1 if none
-    zTPlane polyPlane;
-    FT flags;
-    uint8_t polyNumVertices;
-};
-
-#pragma pack(push, 1)
-template <typename FT>
-struct polyData1Packed
-{
-    int16_t materialIndex;  // -1 if none
-    int16_t lightmapIndex;  // -1 if none
-    zTPlane polyPlane;
-    FT flags;
-    uint8_t polyNumVertices;
-};
-#pragma pack(pop)
-
-template <typename IT, typename FT>
-struct polyData2 : public polyData1<FT>
-{
-    /**
-     * @brief ugly helper-constructor to get from the specific G1/G2-format to a generic one
-     */
-    template <typename _IT, typename _FT>
-    void from(const polyData2<_IT, _FT>& src)
-    {
-        for (size_t i = 0; i < src.polyNumVertices; i++)
-        {
-            indices[i].VertexIndex = static_cast<IT>(src.indices[i].VertexIndex);
-            indices[i].FeatIndex = src.indices[i].FeatIndex;
-        }
-
-        polyData1<FT>::materialIndex = src.materialIndex;
-        polyData1<FT>::lightmapIndex = src.lightmapIndex;
-        polyData1<FT>::polyPlane = src.polyPlane;
-        polyData1<FT>::polyNumVertices = src.polyNumVertices;
-        polyData1<FT>::flags = src.flags.generify();
-    }
-
-    polyData2() {}
-
-    struct Index
-    {
-        IT VertexIndex;
-        uint32_t FeatIndex;
-    };
-
-#pragma pack(push, 1)
-    struct IndexPacked
-    {
-        IT VertexIndex;
-        uint32_t FeatIndex;
-    };
-#pragma pack(pop)
-
-    void read(const uint8_t* _data)
-    {
-        const void*& data = (const void*&)_data;
-        Utils::unalignedRead(polyData1<FT>::materialIndex, data);
-        Utils::unalignedRead(polyData1<FT>::lightmapIndex, data);
-        Utils::unalignedRead(polyData1<FT>::polyPlane, data);
-        Utils::unalignedRead(polyData1<FT>::flags, data);
-        Utils::unalignedRead(polyData1<FT>::polyNumVertices, data);
-
-        for (int i = 0; i < polyData1<FT>::polyNumVertices; i++)
-        {
-            Utils::unalignedRead(indices[i].VertexIndex, data);
-            Utils::unalignedRead(indices[i].FeatIndex, data);
-        }
-    }
-
-    Index indices[255];
-};
-/**
 * @brief Reads the mesh-object from the given binary stream
 */
 void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPolys, bool forceG132bitIndices)
 {
-    uint16_t version;
+    uint16_t version = 0;
 
     // Information about a single chunk
-    BinaryChunkInfo chunkInfo;
+    BinaryChunkInfo chunkInfo{};
 
     // Read chunks until we left the virtual binary file or got to the end-chunk
     // Each chunk starts with a header (BinaryChunkInfo) which gives information
@@ -169,26 +89,45 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                 // zDate - Structure
                 // \n terminated string for the name
                 version = parser.readBinaryWord();
-                zDate date;
+                zDate date{};
                 parser.readStructure(date);
                 std::string name = parser.readLine(false);
                 (void)date;
 
-                LogInfo() << "Reading mesh '" << name << "' (Version: " << version << ")";
-
+                LogInfo() << "Reading mesh" << (name.empty() ? "" : " '"+name+"'") << " (Version: " << version << ")";
+                
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
+                
                 parser.setSeek(chunkEnd);  // Skip chunk
             }
             break;
 
             case MSID_BBOX3D:
             {
-                ZMath::float4 min, max;
+                ZMath::float3 min, max;
+                zMAT3 m3,m4;
+                ZMath::Matrix m; // dont know what for
+                parser.readStructure(m3); // bounding box data with center in third row
+                parser.readStructure(m4); // quite sure that its a 3x3 matrix, identity matrix in barrier mesh
                 parser.readStructure(min);
-                parser.readStructure(max);
+
+                // FIXME: there is some unknown data here ... fill the blanks if you know it .. also variable length and world meshes zeroed data
+                uint32_t lol, rofl, lolrofl;
+                float rofllol;
+                uint16_t alsoUnknown;
+                parser.readStructure(lol);
+                parser.readStructure(rofl);
+                parser.readStructure(lolrofl);
+                parser.readStructure(rofllol);
+                alsoUnknown = parser.readBinaryWord(); (void)alsoUnknown;
 
                 m_BBMin = ZMath::float3(min.x, min.y, min.z);
                 m_BBMax = ZMath::float3(max.x, max.y, max.z);
-
+                
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
+                
                 parser.setSeek(chunkEnd);  // Skip chunk
             }
             break;
@@ -217,12 +156,12 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                 // Read every stored material
                 for (uint32_t i = 0; i < numMaterials; i++)
                 {
-                    parser.readLine(false);  // Read unused material name (Stored a second time later)
+                    std::string aName = parser.readLine(false);  // Read unused material name (Stored a second time later)
 
                     // Skip chunk headers - we know these are zCMaterial
-                    uint32_t chunksize = parser.readBinaryDWord();
+                    uint32_t chunksize = parser.readBinaryDWord(); (void)chunksize;
                     uint16_t version = parser.readBinaryWord();
-                    uint32_t objectIndex = parser.readBinaryDWord();
+                    uint32_t objectIndex = parser.readBinaryDWord(); (void)objectIndex;
 
                     parser.skipSpaces();
 
@@ -232,33 +171,41 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
 
                     // Save into vector
                     m_Materials.emplace_back(zCMaterial::readObjectData(parser, version));
+                    if(aName!=m_Materials.back().matName)
+                      LogInfo() << "Material name mismatch";
                 }
 
                 // Note: There is a bool stored here in the G2-Formats, which says whether to use alphatesting or not
-                // 		 We just skip this for now
-
+                //      We just skip this for now - probably right ... isn't alphaFunc doing this per material already? whats the purpose then of a common alphaTest flag for all materials and which takes priority
+                if(version!=9 || parser.getZenHeader().version!=1) { // FIXME: where to get the most reliable g1 or g2 version info from?
+                  bool useAlphaTest = parser.readBinaryByte()!=0; (void)useAlphaTest;
+                  }
                 // Restore old header and impl
                 delete parser.getImpl();
                 parser.setImpl(oldImpl);
                 parser.setZenHeader(oldHeader);
+                
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
 
                 parser.setSeek(chunkEnd);  // Skip chunk
             }
             break;
 
             case MSID_LIGHTMAPLIST:
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - lightmap list not implemented";
                 parser.setSeek(chunkEnd);  // Skip chunk
                 break;
 
             case MSID_LIGHTMAPLIST_SHARED:
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - lightmap list shared not implemented";
                 parser.setSeek(chunkEnd);  // Skip chunk
                 break;
 
             case MSID_VERTLIST:
             {
-                // uint32 - number of vertices
-                // numVx float3s of vertexpositions
-
                 // Read how many vertices we have in this chunk
                 uint32_t numVertices = parser.readBinaryDWord();
                 m_Vertices.clear();
@@ -268,23 +215,25 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                 parser.readBinaryRaw(m_Vertices.data(), numVertices * sizeof(float) * 3);
 
                 LogInfo() << "Found " << numVertices << " vertices";
-                // Flip x-coord to make up for right handedness
-                //for(auto& v : m_Vertices)
-                //	v.x = -v.x;
+                
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
             }
             break;
 
             case MSID_FEATLIST:
             {
-                // uint32 - number of features
-                // zTMSH_FeatureChunk*num - features
-
                 // Read how many feats we have
                 uint32_t numFeats = parser.readBinaryDWord();
 
                 // Read features
                 m_Features.resize(numFeats);
                 parser.readBinaryRaw(m_Features.data(), numFeats * sizeof(zTMSH_FeatureChunk));
+                
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
+                
+                parser.setSeek(chunkEnd); // just in case there is a mismatch
             }
             break;
 
@@ -356,7 +305,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                     {
                         // TODO: Store these somewhere else
                         // TODO: lodFlag isn't set to something useful in Gothic 1. Also the portal-flags aren't set? Investigate!
-                        if (!p.flags.ghostOccluder && !p.flags.portalPoly && !p.flags.ghostOccluder &&
+                        if (!p.flags.ghostOccluder && !p.flags.portalPoly &&
                             !p.flags.portalIndoorOutdoor)
                         {
                             if (p.polyNumVertices != 0)
@@ -387,7 +336,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
 
                                     WorldTriangle triangle;
                                     triangle.flags = p.flags;
-                                    memcpy(triangle.vertices, vx, sizeof(vx));
+                                    memcpy((ZenLoad::WorldVertex*)triangle.vertices, (ZenLoad::WorldVertex*)vx, sizeof(vx));
 
                                     // Save triangle
                                     m_Triangles.push_back(triangle);
@@ -444,6 +393,13 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                     blockPtr += blockSize + indicesSize * p.polyNumVertices;
                 }
 
+                if(parser.getSeek()!=chunkEnd) { // FIXME: reading 4 byte too much in newWorld.zen - investigate
+                  if(chunkEnd>parser.getSeek())
+                    LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
+                  else
+                    LogInfo() << "Reverting " << parser.getSeek()-chunkEnd << " bytes - reading mesh might be a bit faulty";
+                  }
+                
                 parser.setSeek(chunkEnd);  // Skip chunk, there could be more data here which is never read
             }
             break;
@@ -453,15 +409,30 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                 break;
 
             default:
+                if(parser.getSeek()!=chunkEnd)
+                  LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - unrecognized chunk " << chunkInfo.id << " - length " << chunkInfo.length;
+
                 parser.setSeek(chunkEnd);  // Skip chunk
         }
     }
+    
+    // keep here or move to separate function and call this ... doesnt matter in the end
+    if(m_BBMin.x==0.f && m_BBMax.x==0.f) { // happens that its not read properly ... yet maybe .. or data is not available ... so calculate from all vertices ... costly but only needed once
+      for(const auto& v:getVertices()) {
+        m_BBMin.x = std::min(v.x,m_BBMin.x);
+        m_BBMin.y = std::min(v.y,m_BBMin.y);
+        m_BBMin.z = std::min(v.z,m_BBMin.z);
+        m_BBMax.x = std::max(v.x,m_BBMax.x);
+        m_BBMax.y = std::max(v.y,m_BBMax.y);
+        m_BBMax.z = std::max(v.z,m_BBMax.z);
+        }
+      }
 }
 
 void zCMesh::skip(ZenParser& parser)
 {
     // Information about a single chunk
-    BinaryChunkInfo chunkInfo;
+    BinaryChunkInfo chunkInfo{};
 
     // Read chunks until we left the virtual binary file or got to the end-chunk
     // Each chunk starts with a header (BinaryChunkInfo) which gives information
@@ -484,3 +455,124 @@ void zCMesh::skip(ZenParser& parser)
         }
     }
 }
+
+void zCMesh::packMesh(PackedMesh& mesh, float scale, bool removeDoubles) {
+	std::vector<WorldVertex>& newVertices = mesh.vertices;
+	std::vector<uint32_t> newIndices;
+	newIndices.reserve(m_Indices.size());
+
+	// Map of vertex-indices and their used feature-indices to a vertex in "newVertices"
+	std::map<std::tuple<uint32_t, uint32_t, int16_t>, size_t> vfToNewVx;
+
+	// Map of the new indices and the old indices to the index-vector
+	//std::unordered_map<uint32_t, uint32_t> newToOldIdxIdx;
+
+	if(removeDoubles)
+	{
+		// Get vertices
+		for(size_t i = 0, end = m_Indices.size(); i < end; i++)
+		{
+			uint32_t featidx = m_FeatureIndices[i];
+			uint32_t vertidx = m_Indices[i];
+			int16_t lightmap = m_TriangleLightmapIndices[i / 3];
+
+			// Check if we already got this pair of vertex/feature
+			auto it = vfToNewVx.find(std::make_tuple(vertidx, featidx, lightmap));
+			if(it == vfToNewVx.end())
+			{
+				// Add new entry
+				vfToNewVx[std::make_tuple(vertidx, featidx, lightmap)] = newVertices.size();
+				WorldVertex vx;
+
+				// Extract vertex information
+				vx.Position = m_Vertices[vertidx] * scale;
+				vx.Color = m_Features[featidx].lightStat;
+				vx.TexCoord = ZMath::float2(m_Features[featidx].uv[0], m_Features[featidx].uv[1]);
+				vx.Normal = m_Features[featidx].vertNormal;
+
+				// Add index to this very vertex
+				newIndices.push_back((uint32_t)newVertices.size());
+
+				newVertices.push_back(vx);
+			}
+			else
+			{
+				// Simply put an index to the existing new vertex
+				newIndices.push_back((uint32_t)(*it).second);
+			}
+
+			// Store what this new index was before
+			//newToOldIdxIdx[newIndices.end()-1] = i;
+		}
+	}
+	else
+	{
+		// Just add them as triangles
+		newVertices.reserve(m_Indices.size());
+		for(size_t i = 0, end = m_Indices.size(); i < end; i++)
+		{
+			uint32_t featidx = m_FeatureIndices[i];
+			uint32_t vertidx = m_Indices[i];
+			int16_t lightmap = m_TriangleLightmapIndices[i / 3];
+      (void)lightmap;
+
+			WorldVertex vx;
+
+			// Extract vertex information
+			vx.Position = m_Vertices[vertidx] * scale;
+			vx.Color = m_Features[featidx].lightStat;
+			vx.TexCoord = ZMath::float2(m_Features[featidx].uv[0], m_Features[featidx].uv[1]);
+			vx.Normal = m_Features[featidx].vertNormal;
+
+			newVertices.push_back(vx);
+      newIndices.push_back(uint32_t(newVertices.size()-1));
+		}
+	}
+
+	// Assign materials to packed mesh
+	for(auto& m : m_Materials) {
+		mesh.subMeshes.emplace_back();
+		mesh.subMeshes.back().material = m;
+	  }
+  
+  std::vector<std::vector<uint32_t>> indicesPerSubMesh;
+  indicesPerSubMesh.resize(m_Materials.size());
+	// Sort indices by material
+	for(size_t i = 0, end = newIndices.size(); i < end; i += 3)	{
+		// Get material info of this triangle
+		uint32_t matIdx = m_TriangleMaterialIndices[i / 3];
+    // Add this triangle to its submesh
+    for(size_t j = 0; j < 3; j++)
+      indicesPerSubMesh[matIdx].push_back(newIndices[i + j]);
+	  }
+
+  newIndices.clear();
+  newIndices.reserve(m_Indices.size());
+  size_t idxOffset=0;
+  size_t subMeshIdx=0;
+  for(const auto& smi:indicesPerSubMesh) {
+    size_t idxSize=0;
+    for(const auto& i:smi) {
+      newIndices.emplace_back(i);
+      idxSize++;
+      }
+    mesh.subMeshes[subMeshIdx].indexOffset=idxOffset;
+    mesh.subMeshes[subMeshIdx].indexSize=idxSize;
+    idxOffset+=idxSize;
+    }
+  mesh.indices=newIndices;
+
+	// Store triangles with more information attached as well
+	mesh.triangles.reserve(m_Triangles.size());
+	for(size_t i = 0; i < m_Triangles.size(); i++) {
+    // Add submesh index to this triangle
+		m_Triangles[i].submeshIndex = m_TriangleMaterialIndices[i];
+		mesh.triangles.push_back(m_Triangles[i]);
+
+		for(int v = 0; v < 3; v++)
+			mesh.triangles.back().vertices[v].Position = mesh.triangles.back().vertices[v].Position * scale;
+	}
+
+	mesh.bbox[0] = m_BBMin * scale;
+	mesh.bbox[1] = m_BBMax * scale;
+  }

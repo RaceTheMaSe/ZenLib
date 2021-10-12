@@ -14,8 +14,8 @@ ZenLoad::ParserImplBinSafe::ParserImplBinSafe(ZenParser* parser)
 bool ParserImplBinSafe::readChunkStart(ZenParser::ChunkHeader& header)
 {
     size_t seek = m_pParser->getSeek();
-    EZenValueType type;
-    size_t size;
+    EZenValueType type = ZVT_0;
+    size_t size = 0;
 
     // Check if this actually will be a string
     readTypeAndSizeBinSafe(type, size);
@@ -27,9 +27,9 @@ bool ParserImplBinSafe::readChunkStart(ZenParser::ChunkHeader& header)
     // Read chunk-header
     char        vobDescStk[256] = {};
     std::string vobDescHeap;
-    const char* vobDesc = vobDescStk;
+    const char* vobDesc = (char*)vobDescStk;
 
-    if(!readString(vobDescStk,sizeof(vobDescStk))) {
+    if(!readString((char*)vobDescStk,sizeof(vobDescStk))) {
       vobDescHeap = readString();
       vobDesc     = vobDescHeap.c_str();
       }
@@ -44,8 +44,8 @@ bool ParserImplBinSafe::readChunkStart(ZenParser::ChunkHeader& header)
 */
 bool ParserImplBinSafe::readChunkEnd() {
   size_t seek = m_pParser->getSeek();
-  EZenValueType type;
-  size_t size;
+  EZenValueType type = ZVT_0;
+  size_t size = 0;
 
   // Check if this actually will be a string
   readTypeAndSizeBinSafe(type, size);
@@ -55,7 +55,7 @@ bool ParserImplBinSafe::readChunkEnd() {
     return false;  // Next property isn't a string or the end
 
   char l[3] = {};
-  if(!readString(l,3) || l[0]!='[' || l[1]!=']') {
+  if(!readString((char*)l,3) || l[0]!='[' || l[1]!=']') {
     m_pParser->setSeek(seek);  // Next property isn't a string or the end
     return false;
     }
@@ -71,7 +71,7 @@ void ParserImplBinSafe::readImplHeader()
     m_pParser->m_Header.binSafeHeader.bsVersion = m_pParser->readBinaryDWord();
 
     // Read object count
-    m_pParser->m_Header.objectCount = m_pParser->readBinaryDWord();
+    m_pParser->m_Header.objectCount = (int)m_pParser->readBinaryDWord();
 
     // Read offset of where to find the global hash-table of all objects
     m_pParser->m_Header.binSafeHeader.bsHashTableOffset = m_pParser->readBinaryDWord();
@@ -94,6 +94,9 @@ void ParserImplBinSafe::readImplHeader()
         uint16_t insIdx = m_pParser->readBinaryWord();
         uint32_t hashValue = m_pParser->readBinaryDWord();
 
+        (void)insIdx;
+        (void)hashValue;
+
         // Read the keys data from the archive
         std::vector<uint8_t> keyData(keyLen);
         m_pParser->readBinaryRaw(keyData.data(), keyLen);
@@ -112,8 +115,8 @@ void ParserImplBinSafe::readImplHeader()
 */
 std::string ParserImplBinSafe::readString()
 {
-    EZenValueType type;
-    size_t size;
+    EZenValueType type = ZVT_0;
+    size_t size = 0;
 
     // These values start with a small header
     readTypeAndSizeBinSafe(type, size);
@@ -126,7 +129,7 @@ std::string ParserImplBinSafe::readString()
     m_pParser->readBinaryRaw(&str[0], size);
 
     // Skip potential hash-value at the end of the string
-    EZenValueType t = static_cast<EZenValueType>(m_pParser->readBinaryByte());
+    auto t = static_cast<EZenValueType>(m_pParser->readBinaryByte());
     if (t != ZVT_HASH)
         m_pParser->m_Seek -= sizeof(uint8_t);
     else
@@ -137,8 +140,8 @@ std::string ParserImplBinSafe::readString()
 
 bool ParserImplBinSafe::readString(char* buf, size_t bufSize)
 {
-  EZenValueType type;
-  size_t size;
+  EZenValueType type = ZVT_0;
+  size_t size = 0;
 
   // These values start with a small header
   readTypeAndSizeBinSafe(type, size);
@@ -153,7 +156,7 @@ bool ParserImplBinSafe::readString(char* buf, size_t bufSize)
   buf[size] = '\0';
 
   // Skip potential hash-value at the end of the string
-  EZenValueType t = static_cast<EZenValueType>(m_pParser->readBinaryByte());
+  auto t = static_cast<EZenValueType>(m_pParser->readBinaryByte());
   if (t != ZVT_HASH)
       m_pParser->m_Seek -= sizeof(uint8_t);
   else
@@ -175,10 +178,14 @@ void ParserImplBinSafe::readTypeAndSizeBinSafe(EZenValueType& type, size_t& size
 /**
 * @brief Reads data of the expected type. Throws if the read type is not the same as specified and not 0
 */
-void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, size_t targetSize, EZenValueType expectedType)
+void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, size_t targetSize, EZenValueType expectedType, bool optional)
 {
-    EZenValueType realType;
-    size_t        size;
+    EZenValueType realType = ZVT_0;
+    size_t        size = 0;
+
+    size_t seek=0;
+    if(optional)
+      seek=m_pParser->getSeek();
 
     // Read type and size of the entry
     readTypeAndSizeBinSafe(realType, size);
@@ -200,10 +207,19 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
         }
       }
 
-    if(expectedType!=realType && realType!=ZVT_0)
+    if (expectedType != realType && realType != ZVT_0) {
+      if(optional) {
+        m_pParser->setSeek(seek);
+        return;
+        }
       throw std::runtime_error(std::string("Valuetype name does not match expected type. Value:") + expectedName);
+      }
 
     if(expectedType!=ZVT_RAW && expectedType!=ZVT_RAW_FLOAT && expectedType!=ZVT_STRING && realType!=ZVT_0) {
+      if(optional) {
+        m_pParser->setSeek(seek);
+        return;
+        }
       if(size!=targetSize)
         throw std::runtime_error(std::string("Valuetype size does not match expected size. Value:") + expectedName);
       }
@@ -229,7 +245,7 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
         *reinterpret_cast<uint8_t*>(target) = m_pParser->readBinaryByte();
         break;
       case ZVT_WORD:
-        *reinterpret_cast<int16_t*>(target) = m_pParser->readBinaryWord();
+        *reinterpret_cast<int16_t*>(target) = (int16_t)m_pParser->readBinaryWord();
         break;
       case ZVT_BOOL:
         *reinterpret_cast<bool*>(target) = m_pParser->readBinaryDWord() != 0;
@@ -241,7 +257,7 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
         break;
 
       case ZVT_COLOR:
-        reinterpret_cast<uint8_t*>(target)[2] = m_pParser->readBinaryByte();  // FIXME: These are may ordered wrong
+        reinterpret_cast<uint8_t*>(target)[2] = m_pParser->readBinaryByte();
         reinterpret_cast<uint8_t*>(target)[1] = m_pParser->readBinaryByte();
         reinterpret_cast<uint8_t*>(target)[0] = m_pParser->readBinaryByte();
         reinterpret_cast<uint8_t*>(target)[3] = m_pParser->readBinaryByte();
@@ -249,18 +265,15 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
 
       case ZVT_RAW_FLOAT:
       case ZVT_RAW:
+        if(targetSize<size)
+          LogInfo() << "Reading more than expected - might produce an overflow!";
         m_pParser->readBinaryRaw(target, size);
         break;
       case ZVT_10:
-        break;
       case ZVT_11:
-        break;
       case ZVT_12:
-        break;
       case ZVT_13:
-        break;
       case ZVT_14:
-        break;
       case ZVT_15:
         break;
       case ZVT_ENUM:
@@ -269,7 +282,7 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
       }
 
     // Skip potential hash-value at the end of the entry
-    EZenValueType t = static_cast<EZenValueType>(m_pParser->readBinaryByte());
+    auto t = static_cast<EZenValueType>(m_pParser->readBinaryByte());
     if(t != ZVT_HASH)
       m_pParser->m_Seek -= sizeof(uint8_t);
     else

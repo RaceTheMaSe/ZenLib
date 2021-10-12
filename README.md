@@ -55,7 +55,7 @@ vdf.getFileData("MyAsset.ext", data);
 
 /** ... **/
 
- // Load ZEN from disk. There is also a constructor for byte-data, usefull if loading from a .vdf.
+ // Load ZEN from disk. There is also a constructor for byte-data, useful if loading from a .vdf.
  ZenLoad::ZenParser parser("MyWorld.zen");
  
  // Do parsing

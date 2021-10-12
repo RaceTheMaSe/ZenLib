@@ -12,8 +12,8 @@ namespace ZenLoad
     class ManParser
     {
     public:
-        typedef std::vector<zCModelAniSample> Samples;
-        typedef std::vector<uint32_t> NodeIndex;
+        using Samples = std::vector<zCModelAniSample>;
+        using NodeIndex = std::vector<uint32_t>;
 
         enum EChunkType
         {
@@ -27,15 +27,15 @@ namespace ZenLoad
 
         ManParser(ZenParser& zen);
 
-        /** Returns the parsed header.
+     /** Returns the parsed header.
      *
      * Call this if parse() returns CHUNK_HEADER.
      *
      * @return The header read during the last call to parse().
      */
-        const zCModelAniHeader& header() const { return m_Header; }
+        const zCModelAni::ModelAniHeader& header() const { return m_Header; }
 
-        /** Returns the parsed samples.
+     /** Returns the parsed samples.
      *
      * Call this if parse() returns CHUNK_RAWDATA.
      *
@@ -43,7 +43,7 @@ namespace ZenLoad
      */
         const Samples& samples() const { return m_Samples; }
 
-        /** Returns the parsed nodes.
+     /** Returns the parsed nodes.
      *
      * Call this if parse() returns CHUNK_RAWDATA.
      *
@@ -56,7 +56,7 @@ namespace ZenLoad
     private:
         ZenParser& m_Zen;
 
-        zCModelAniHeader m_Header;
+        zCModelAni::ModelAniHeader m_Header = zCModelAni::ModelAniHeader();
         Samples m_Samples;
         NodeIndex m_NodeIndex;
 

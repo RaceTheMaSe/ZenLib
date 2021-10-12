@@ -19,7 +19,7 @@
 #  error BeOS support was dropped since PhysicsFS 2.1. Sorry. Try Haiku!
 #elif (defined _WIN32_WCE) || (defined _WIN64_WCE)
 #  error PocketPC support was dropped since PhysicsFS 2.1. Sorry. Try WinRT!
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1700) && !_USING_V110_SDK71_)	/* _MSC_VER==1700 for MSVC 2012 */
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1700) && !_USING_V110_SDK71_)  /* _MSC_VER==1700 for MSVC 2012 */
 #  include <winapifamily.h>
 #  define PHYSFS_PLATFORM_WINDOWS 1
 #  if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -40,11 +40,11 @@
 #  define PHYSFS_PLATFORM_POSIX 1
 #elif defined(macintosh)
 #  error Classic Mac OS support was dropped from PhysicsFS 2.0. Move to OS X.
-#elif defined(ANDROID)
-#  define PHYSFS_PLATFORM_LINUX 1
-#  define PHYSFS_PLATFORM_UNIX 1
-#  define PHYSFS_PLATFORM_POSIX 1
-#  define PHYSFS_NO_CDROM_SUPPORT 1
+#elif defined(__ANDROID__)
+ #  define PHYSFS_PLATFORM_LINUX 1
+ #  define PHYSFS_PLATFORM_ANDROID 1
+ #  define PHYSFS_PLATFORM_POSIX 1
+ #  define PHYSFS_NO_CDROM_SUPPORT 1
 #elif defined(__linux)
 #  define PHYSFS_PLATFORM_LINUX 1
 #  define PHYSFS_PLATFORM_UNIX 1

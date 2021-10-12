@@ -12,13 +12,14 @@
 namespace Daedalus {
 class DaedalusVM {
   public:
-    DaedalusVM(const std::vector<uint8_t> data);
+    DaedalusVM(const std::vector<uint8_t>& data);
     DaedalusVM(const uint8_t* pDATFileData, size_t numBytes);
 
-    void    eval(size_t pcInit);
-    int32_t runFunctionBySymIndex(size_t symIdx);
+    void    eval(size_t pcInit, bool initScripts, std::function<void(size_t)> f);
+    int32_t runFunctionBySymIndex(size_t symIdx, bool initScript, std::function<void(size_t)> f);
 
     void registerExternalFunction(const char *symName, const std::function<void(DaedalusVM&)>& fn);
+    void unregisterExternalFunction(const char *symName);
     void registerUnsatisfiedLink (const std::function<void(DaedalusVM&)> &fn);
 
     void pushInt(uint32_t value);
@@ -62,6 +63,8 @@ class DaedalusVM {
     PARSymbol&                    globalVictim();
     PARSymbol&                    globalItem();
 
+    size_t                        numFunctionCalls() const { return m_NumFunctionCalls; };
+
   private:
     template <typename T = int32_t>
     T           popDataValue();
@@ -79,15 +82,19 @@ class DaedalusVM {
         using FunctionInfo = std::pair<size_t, CallStackFrame::AddressType>;
 
         CallStackFrame(DaedalusVM& vm, int32_t addressOrIndex, AddressType addrType);
+        CallStackFrame(CallStackFrame&)=delete;
+        CallStackFrame(CallStackFrame&&)=delete;
         ~CallStackFrame();
+        CallStackFrame& operator=(CallStackFrame&)=delete;
+        CallStackFrame& operator=(CallStackFrame&&)=delete;
 
         CallStackFrame* const calee         =nullptr;
         const char*           nameHint      =nullptr;
         size_t                address       =0;
-        size_t                prevStackGuard=0;
         bool                  hasReturnVal  =false;
 
       private:
+        size_t                prevStackGuard=0;
         DaedalusVM&           vm;
       };
 
@@ -95,9 +102,9 @@ class DaedalusVM {
 
     struct Stk {
       Stk(int32_t i):i32(i){}
-      Stk(float   f):f(f){}
-      Stk(const ZString& s):s(s){}
-      Stk(void* inst,int32_t i,uint32_t id):i32(i),tag(EParOp_PushVar),id(id),inst(inst){}
+      Stk(float   fIn):f(fIn){}
+      Stk(ZString sIn):s(std::move(sIn)){}
+      Stk(void* instIn,int32_t i,uint32_t idIn):i32(i),tag(EParOp_PushVar),id(idIn),inst(instIn){}
 
       union {
         int32_t i32;
@@ -136,5 +143,7 @@ class DaedalusVM {
     size_t                                                       m_OtherId  = size_t(-1);
     size_t                                                       m_VictimId = size_t(-1);
     size_t                                                       m_ItemId   = size_t(-1);
+
+    size_t                                                       m_NumFunctionCalls=0;
   };
 }  // namespace Daedalus

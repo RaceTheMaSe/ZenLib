@@ -35,7 +35,7 @@ std::vector<std::string> Utils::split(const std::string& _s, const std::string& 
     std::string line;
     while (std::getline(stringStream, line))
     {
-        std::size_t prev = 0, pos;
+        std::size_t prev = 0, pos = 0;
         while ((pos = line.find_first_of(delim, prev)) != std::string::npos)
         {
             if (pos > prev)

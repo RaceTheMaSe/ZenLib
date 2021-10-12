@@ -12,49 +12,6 @@ namespace VDFS
 
 namespace ZenLoad
 {
-    class ZenParser;
-
-    enum
-    {
-        ANIEVENT_MAXSTRING = 4
-    };
-
-    struct zCModelAniHeader
-    {
-        uint16_t version;
-
-        std::string aniName;
-
-        uint32_t layer;
-        uint32_t numFrames;
-        uint32_t numNodes;
-        float fpsRate;
-        float fpsRateSource;
-        float samplePosRangeMin;
-        float samplePosScaler;
-
-        ZMath::float3 aniBBox[2];
-
-        std::string nextAniName;
-
-        uint32_t nodeChecksum;
-    };
-}  // namespace ZenLoad
-
-// FIXME: COMPATIBILITY FOR MASTER - REMOVE LATER!
-
-#include <vector>
-#include "zTypes.h"
-#include "utils/mathlib.h"
-
-namespace VDFS
-{
-    class FileIndex;
-}
-
-namespace ZenLoad
-{
-    class ZenParser;
     class zCModelAni
     {
     public:
@@ -77,23 +34,23 @@ namespace ZenLoad
 
         struct ModelAniHeader
         {
-            uint16_t version;
+            uint16_t version{};
 
             std::string aniName;
 
-            uint32_t layer;
-            uint32_t numFrames;
-            uint32_t numNodes;
-            float fpsRate;
-            float fpsRateSource;
-            float samplePosRangeMin;
-            float samplePosScaler;
+            uint32_t layer{};
+            uint32_t numFrames{};
+            uint32_t numNodes{};
+            float fpsRate{};
+            float fpsRateSource{};
+            float samplePosRangeMin{};
+            float samplePosScaler{};
 
-            ZMath::float3 aniBBox[2];
+            ZMath::float3 aniBBox[2]{};
 
             std::string nextAniName;
 
-            uint32_t nodeChecksum;
+            uint32_t nodeChecksum{};
         };
 
         struct AniSample
@@ -102,7 +59,7 @@ namespace ZenLoad
             ZMath::float3 position;
         };
 
-        zCModelAni() {}
+        zCModelAni() = default;
 
         /**
         * @brief Loads the mesh from the given VDF-Archive
@@ -111,7 +68,7 @@ namespace ZenLoad
 
         /**
          * @brief Reads the mesh-object from the given binary stream
-         * @param fromZen Whether this mesh is supposed to be read from a zenfile. In this case, information about the binary chunk is also read.
+         * @param parser ZenParser object
          */
         void readObjectData(ZenParser& parser);
 
@@ -139,7 +96,7 @@ namespace ZenLoad
         /**
          * @brief File information
          */
-        ModelAniHeader m_ModelAniHeader;
+        ModelAniHeader m_ModelAniHeader = ModelAniHeader();
 
         /**
          * @brief Ani-Events

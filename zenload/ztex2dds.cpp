@@ -2,16 +2,16 @@
  * File modified for openZE. Based on NicoDEs ztextools.
  */
 
+#include "utils/logger.h" // moved before ztex2dds.h as macro MAKEFOURCC is defined in one of VS headers without IFNDEF guards
 #include "ztex2dds.h"
 #include <algorithm>
 #include <string>
-#include "ztex.h"
-#include <assert.h>
-#include <inttypes.h>
-#include <math.h>
+#include <cassert>
+#include <cinttypes>
+#include <cmath>
 #include <squish.h>
-#include <string.h>
-#include "utils/logger.h"
+#include <cstring>
+
 
 #define ZTEX2DDS_ERROR_NONE 0   /* No Error                  */
 #define ZTEX2DDS_ERROR_ARGS 1   /* Invalid Params / Syntax   */
@@ -20,27 +20,15 @@
 #define ZTEX2DDS_ERROR_CREATE 5 /* Failed to Create Output   */
 #define ZTEX2DDS_ERROR_WRITE 6  /* Failed to Write Output    */
 #define ZTEX2DDS_ERROR_FORMAT 7 /* Invalid Input File Format */
-
+ 
 namespace ZenLoad
 {
-    /**
-	 * @brief Returns whether x is a power of two
-	 */
-    static bool IsPowerOfTwo(unsigned long x)
-    {
-        if (x == 0)
-            return false;
-        while ((x & 1) == 0)
-            x >>= 1;
-        return (1 == x);
-    }
-
     /*FIXME: Scanline Alignment */
     static uint32_t GetMipmapSize(unsigned long format, unsigned long width, unsigned long height, int level)
     {
-        unsigned long x;
-        unsigned long y;
-        int i;
+        unsigned long x = 0;
+        unsigned long y = 0;
+        int i = 0;
 
         x = std::max(1ul, width);
         y = std::max(1ul, height);
@@ -81,8 +69,8 @@ namespace ZenLoad
     }
 
     /**
-	 * @brief Utility function to read data from a vector safely
-	 */
+   * @brief Utility function to read data from a vector safely
+   */
     static bool readVectorData(void* target, size_t start, size_t size, const std::vector<uint8_t>& data)
     {
         if (start + size > data.size())
@@ -94,8 +82,8 @@ namespace ZenLoad
     }
 
     /**
-	 * @brief Utility function to write to the end of a vector
-	 */
+   * @brief Utility function to write to the end of a vector
+   */
     static bool writeVectorData(const void* data, size_t size, std::vector<uint8_t>& target)
     {
         size_t sz=target.size();
@@ -105,33 +93,33 @@ namespace ZenLoad
     }
 
     /**
-	 * @brief Modified ZTEX to DDS conversion
-	 */
+   * @brief Modified ZTEX to DDS conversion
+   */
     int convertZTEX2DDS(const std::vector<uint8_t>& ztexData, std::vector<uint8_t>& ddsData, bool optionForceARGB, int* pOutWidth, int* pOutHeight)
     {
-        ZTEX_FILE_HEADER ZTexHeader;
+        ZTEX_FILE_HEADER ZTexHeader{};
         uint32_t BytesRead = 0;
-        uint32_t DdsMagic;
-        DDSURFACEDESC2 DdsHeader;
-        int MipmapCount;
-        int MipmapLevel;
-        int i;
-        ozRGBQUAD palentry;
-        uint32_t BufferSize;
-        uint32_t MipmapSize;
-        ozRGBQUAD* Pixel32;
-        ozRGBTRIPLE* Pixel24;
-        uint8_t ColorTemp;
+        uint32_t DdsMagic = 0;
+        tagDDSURFACEDESC2 DdsHeader{};
+        int MipmapCount = 0;
+        int MipmapLevel = 0;
+        int i = 0;
+        ozRGBQUAD palentry{};
+        uint32_t BufferSize = 0;
+        uint32_t MipmapSize = 0;
+        ozRGBQUAD* Pixel32 = nullptr;
+        ozRGBTRIPLE* Pixel24 = nullptr;
+        uint8_t ColorTemp = 0;
 
         // Read header
         if (!readVectorData(&ZTexHeader, 0, sizeof(ZTexHeader), ztexData))
             return ZTEX2DDS_ERROR_READ;
 
         if (pOutWidth)
-            *pOutWidth = ZTexHeader.TexInfo.Width;
+            *pOutWidth = (int)ZTexHeader.TexInfo.Width;
 
         if (pOutHeight)
-            *pOutHeight = ZTexHeader.TexInfo.Height;
+            *pOutHeight = (int)ZTexHeader.TexInfo.Height;
 
         BytesRead += sizeof(ZTexHeader);
 
@@ -152,7 +140,7 @@ namespace ZenLoad
 
         /* DDSURFACEDESC2 */
         memset(&DdsHeader, 0, sizeof(DdsHeader));
-        DdsHeader.dwSize = sizeof(DDSURFACEDESC2);
+        DdsHeader.dwSize = sizeof(tagDDSURFACEDESC2);
         DdsHeader.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_PIXELFORMAT | DDSD_CAPS;
         DdsHeader.ddsCaps.dwCaps1 = DDSCAPS_TEXTURE;
         DdsHeader.dwHeight = ZTexHeader.TexInfo.Height;
@@ -175,7 +163,7 @@ namespace ZenLoad
             DdsHeader.ddsCaps.dwCaps1 |= DDSCAPS_MIPMAP | DDSCAPS_COMPLEX;
             DdsHeader.dwMipMapCount = ZTexHeader.TexInfo.MipMaps;
         }
-        DdsHeader.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
+        DdsHeader.ddpfPixelFormat.dwSize = sizeof(DDSD_PIXELFORMAT);
         switch (ZTexHeader.TexInfo.Format)
         {
             case ZTEXFMT_B8G8R8A8:
@@ -325,7 +313,7 @@ namespace ZenLoad
             }
         }
         /* Mipmaps */
-        MipmapCount = std::max(1u, ZTexHeader.TexInfo.MipMaps);
+        MipmapCount = (int)std::max(1u, ZTexHeader.TexInfo.MipMaps);
         BufferSize = 0;
         for (MipmapLevel = 0; MipmapLevel < MipmapCount; MipmapLevel++)
             BufferSize += GetMipmapSize(ZTexHeader.TexInfo.Format,
@@ -334,7 +322,7 @@ namespace ZenLoad
         if(BytesRead+BufferSize>ztexData.size())
           return ZTEX2DDS_ERROR_READ;
 
-        const uint8_t* Buffer = reinterpret_cast<const uint8_t*>(&ztexData[BytesRead]);
+        const auto* Buffer = reinterpret_cast<const uint8_t*>(&ztexData[BytesRead]);
         BytesRead += BufferSize;
 
         const uint8_t* Mipmap = Buffer + BufferSize;
@@ -418,7 +406,7 @@ namespace ZenLoad
 
     DXTLevel getDXTLevelFromDDS(const std::vector<uint8_t>& ddsData)
     {
-        DDSURFACEDESC2 desc = getSurfaceDesc(ddsData);
+        tagDDSURFACEDESC2 desc = getSurfaceDesc(ddsData);
 
         switch (desc.ddpfPixelFormat.dwFourCC)
         {
@@ -443,46 +431,46 @@ namespace ZenLoad
         size_t seek = 0;
 
         seek += sizeof(uint32_t);        // Skip magic number
-        seek += sizeof(DDSURFACEDESC2);  // Skip header
+        seek += sizeof(tagDDSURFACEDESC2);  // Skip header
 
-        DDSURFACEDESC2 desc = getSurfaceDesc(ddsData);
+        tagDDSURFACEDESC2 desc = getSurfaceDesc(ddsData);
         DXTLevel dxt = getDXTLevelFromDDS(ddsData);
 
         for (int i = 0; i < mip; i++)
         {
-            seek += ComputeSizeInBytes(i, desc.dwWidth, desc.dwHeight, dxt == DXTLevel::DXT1);
+            seek += ComputeSizeInBytes(i, (int)desc.dwWidth, (int)desc.dwHeight, dxt == DXTLevel::DXT1);
         }
 
         return seek;
     }
 
     /**
-	 * @param ddsData Loaded dds
-	 * @return Pointer to the surface info of the given dds
-	 */
-    DDSURFACEDESC2 getSurfaceDesc(const std::vector<uint8_t>& ddsData)
+   * @param ddsData Loaded dds
+   * @return Pointer to the surface info of the given dds
+   */
+    tagDDSURFACEDESC2 getSurfaceDesc(const std::vector<uint8_t>& ddsData)
     {
-        DDSURFACEDESC2 desc;
+        tagDDSURFACEDESC2 desc{};
 
-        memcpy(&desc, &ddsData[sizeof(uint32_t)], sizeof(DDSURFACEDESC2));
+        memcpy(&desc, &ddsData[sizeof(uint32_t)], sizeof(tagDDSURFACEDESC2));
 
         return desc;
     }
 
     /**
-	 * @brief Convert dds to RGBA8
-	 */
+   * @brief Convert dds to RGBA8
+   */
     void convertDDSToRGBA8(const std::vector<uint8_t>& ddsData, std::vector<uint8_t>& rgba8Data, int mip)
     {
         size_t seek = 0;
         seek += sizeof(uint32_t);  // Skip magic number
-        const DDSURFACEDESC2* desc = reinterpret_cast<const DDSURFACEDESC2*>(&ddsData[seek]);
-        seek += sizeof(DDSURFACEDESC2);
+        const auto* desc = reinterpret_cast<const tagDDSURFACEDESC2*>(&ddsData[seek]);
+        seek += sizeof(tagDDSURFACEDESC2);
 
         mip = std::min((int)mip, (int)desc->dwMipMapCount);
 
         DXTLevel dxtLevel = getDXTLevelFromDDS(ddsData);
-        int squishDxtLevel;
+        int squishDxtLevel = 0;
         switch (dxtLevel)
         {
             case DXTLevel::DXT1:
@@ -504,7 +492,7 @@ namespace ZenLoad
 
         for (int i = 0; i < mip; i++)
         {
-            seek += ComputeSizeInBytes(i, desc->dwWidth, desc->dwHeight, squishDxtLevel == squish::kDxt1);
+            seek += ComputeSizeInBytes(i, (int)desc->dwWidth, (int)desc->dwHeight, squishDxtLevel == squish::kDxt1);
         }
 
         int px = (int)std::max(1.0f, (float)floor(desc->dwWidth / pow(2.0f, mip)));

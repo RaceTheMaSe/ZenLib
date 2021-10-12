@@ -12,7 +12,7 @@
 using namespace ZenLoad;
 using namespace Daedalus;
 
-DaedalusVM::DaedalusVM(const std::vector<uint8_t> data)
+DaedalusVM::DaedalusVM(const std::vector<uint8_t>& data)
   :DaedalusVM(data.data(),data.size()){
   }
 
@@ -25,7 +25,7 @@ DaedalusVM::DaedalusVM(const uint8_t* pDATFileData, size_t numBytes)
   m_ItemId   = m_DATFile.getSymbolIndexByName("item");
   }
 
-void DaedalusVM::eval(size_t PC) {
+void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> loadProgress) {
   int32_t a=0;
   int32_t b=0;
 
@@ -190,7 +190,11 @@ void DaedalusVM::eval(size_t PC) {
 
         {
         CallStackFrame frame(*this, op.address, CallStackFrame::Address);
-        eval(size_t(op.address));
+        if(initScripts)
+          m_NumFunctionCalls++;
+        eval(size_t(op.address),initScripts,loadProgress);
+        if(initScripts)
+          loadProgress(m_NumFunctionCalls);
         }
 
         m_Instance = currentInstance;
@@ -207,7 +211,11 @@ void DaedalusVM::eval(size_t PC) {
 
         if(f!=nullptr && *f) {
           CallStackFrame frame(*this, op.symbol, CallStackFrame::SymbolIndex);
+          if(initScripts)
+            m_NumFunctionCalls++;
           (*f)(*this);
+          if(initScripts)
+            loadProgress(m_NumFunctionCalls);
           } else {
           CallStackFrame frame(*this, op.symbol, CallStackFrame::SymbolIndex);
           m_OnUnsatisfiedCall(*this);
@@ -289,6 +297,13 @@ void DaedalusVM::registerExternalFunction(const char* symName, const std::functi
     }
   }
 
+void DaedalusVM::unregisterExternalFunction(const char* symName) {
+  if(m_DATFile.hasSymbolName(symName)) {
+    size_t s = m_DATFile.getSymbolIndexByName(symName);
+    m_ExternalsByIndex[s] = nullptr;
+    }
+  }
+
 void DaedalusVM::registerUnsatisfiedLink(const std::function<void (DaedalusVM &)> &fn) {
   m_OnUnsatisfiedCall = fn;
   }
@@ -319,7 +334,7 @@ T DaedalusVM::popDataValue() {
 void DaedalusVM::pushVar(size_t index, uint32_t arrIdx) {
   auto& sym = m_DATFile.getSymbolByIndex(index);(void)sym;
   auto ptr  = getCurrentInstanceDataPtr();
-  m_Stack.emplace_back(ptr,index,arrIdx);
+  m_Stack.emplace_back(ptr,(int32_t)index,arrIdx);
   }
 
 uint32_t DaedalusVM::popVar(uint32_t& arrIdx) {
@@ -382,7 +397,7 @@ float DaedalusVM::popFloat() {
 
 ZString DaedalusVM::popString() {
   if(m_Stack.empty())
-    return ZString();
+    return {};
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
@@ -500,7 +515,7 @@ void DaedalusVM::clearReferences(EInstanceClass h) {
 void DaedalusVM::initializeInstance(GEngineClasses::Instance &instance, size_t symIdx, EInstanceClass classIdx) {
   PARSymbol& s = m_DATFile.getSymbolByIndex(symIdx);
 
-  if(s.properties.elemProps.type!=EParType_Instance)
+  if(s.properties.elemProps.type!=(uint32_t)EParType_Instance)
     terminateScript<InvalidCall>();
   // Enter address into instance-symbol
   s.instance.set(&instance,classIdx);
@@ -520,7 +535,7 @@ void DaedalusVM::initializeInstance(GEngineClasses::Instance &instance, size_t s
   instance.instanceSymbol = symIdx;
 
   // Run script code to initialize the object
-  runFunctionBySymIndex(symIdx);
+  runFunctionBySymIndex(symIdx,false,{});
 
   if(m_SelfId!=size_t(-1))
     globalSelf() = selfCpy;
@@ -572,7 +587,7 @@ PARSymbol &DaedalusVM::globalItem() {
   return m_DATFile.getSymbolByIndex(m_ItemId);
   }
 
-int32_t DaedalusVM::runFunctionBySymIndex(size_t symIdx) {
+int32_t DaedalusVM::runFunctionBySymIndex(size_t symIdx, bool initScript, std::function<void(size_t)> f) {
   if(symIdx==size_t(-1))
     return 0;
 
@@ -583,7 +598,9 @@ int32_t DaedalusVM::runFunctionBySymIndex(size_t symIdx) {
     return -1;
     }
   // Execute the instructions
-  eval(frame.address);
+  if(initScript)
+    m_NumFunctionCalls=0;
+  eval(frame.address,initScript,f);
   hasRet = frame.hasReturnVal;
   }
 
@@ -616,7 +633,7 @@ void DaedalusVM::terminateScript(){
 
   auto s = m_CallStack;
   while(s!=nullptr) {
-    stk.push_back(s->nameHint);
+    stk.emplace_back(s->nameHint);
     s = s->calee;
     }
   throw T(std::move(stk));

@@ -39,9 +39,9 @@ bool ParserImplASCII::readChunkStart(ZenParser::ChunkHeader& header)
     // Parse chunk-header
     char        vobDescStk[256] = {};
     std::string vobDescHeap;
-    const char* vobDesc = vobDescStk;
+    const char* vobDesc = (const char*)vobDescStk;
 
-    if(!readString(vobDescStk,sizeof(vobDescStk))) {
+    if(!readString((char*)vobDescStk,sizeof(vobDescStk))) {
       vobDescHeap = readString();
       vobDesc     = vobDescHeap.c_str();
       }
@@ -64,7 +64,7 @@ bool ParserImplASCII::readChunkEnd()
 
     m_pParser->skipSpaces();
     char l[3] = {};
-    if(!readString(l,3) || l[0]!='[' || l[1]!=']') {
+    if(!readString((char*)l,3) || l[0]!='[' || l[1]!=']') {
       m_pParser->setSeek(seek);  // Next property isn't a string or the end
       return false;
       }
@@ -105,23 +105,29 @@ bool ParserImplASCII::readString(char* buf, size_t size)
 /**
  * @brief Reads data of the expected type. Throws if the read type is not the same as specified and not 0
  */
-void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size_t targetSize, EZenValueType expectedType)
+void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size_t targetSize, EZenValueType expectedType, bool optional)
 {
     m_pParser->skipSpaces();
     std::string lineHeap;
     char        lineStk[256] = {};
-    char*       line = lineStk;
-    if(!readString(lineStk,sizeof(lineStk)))
+    char*       line = (char*)lineStk;
+    size_t seek = m_pParser->getSeek();
+    if(!readString((char*)lineStk,sizeof(lineStk)))
     {
       lineHeap = m_pParser->readLine();
-      line     = lineHeap.size()>0 ? &lineHeap[0] : lineStk;
+      line     = lineHeap.size()>0 ? &lineHeap[0] : (char*)lineStk;
     }
 
     size_t lnSize = std::strlen(line);
     if(lnSize>=1) {
-      // FIXME?
-      if(line[0]=='[')
-        return;
+      if(line[0]=='[') {
+        if(optional) {
+          m_pParser->setSeek(seek); // reset seek
+          return;
+          }
+        else
+          throw std::runtime_error(std::string("Chunk end instead of: ") + expectedName);
+        }
       }
 
     /* Examples:
@@ -162,7 +168,12 @@ void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size
         if('A'<=n && n<='Z')
           n = char(n-'A'+'a');
         if(e!=n) {
-          throw std::runtime_error(std::string("Value name does not match expected name. Value:") + name + " Expected: " + expectedName);
+          if(optional) {
+            m_pParser->setSeek(seek);
+            return;
+            }
+          else
+            throw std::runtime_error(std::string("Value name does not match expected name. Value:") + name + " Expected: " + expectedName);
           }
         if(expectedName[i]=='\0')
           break;
@@ -228,15 +239,10 @@ void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size
         parseRawVec(value,reinterpret_cast<uint8_t*>(target),targetSize);
         break;
       case ZVT_10:
-        break;
       case ZVT_11:
-        break;
       case ZVT_12:
-        break;
       case ZVT_13:
-        break;
       case ZVT_14:
-        break;
       case ZVT_15:
         break;
       case ZVT_ENUM:
@@ -255,11 +261,11 @@ void ParserImplASCII::readEntryType(EZenValueType& outtype, size_t& size)
   m_pParser->skipSpaces();
   std::string lineHeap;
   char        lineStk[256] = {};
-  char*       line = lineStk;
-  if(!readString(lineStk,sizeof(lineStk)))
+  char*       line = (char*)lineStk;
+  if(!readString((char*)lineStk,sizeof(lineStk)))
   {
     lineHeap = m_pParser->readLine();
-    line     = lineHeap.size()>0 ? &lineHeap[0] : lineStk;
+    line     = lineHeap.size()>0 ? &lineHeap[0] : (char*)lineStk;
   }
 
   size_t lnSize = std::strlen(line);
@@ -324,14 +330,16 @@ ParserImpl::EZenValueType ParserImplASCII::parseType(const char* type) const
     return ZVT_RAW;
   if(std::strcmp(type,"enum")==0)
     return ZVT_ENUM;
+  if(std::memcmp(type,"enum",4)==0) // version 0 enums have all types appended with semicolons
+    return ZVT_ENUM;
   throw std::runtime_error("Unknown type");
 }
 
 ZMath::float3 ParserImplASCII::parseVec3(const char* line) const
 {
   float ret[3] = {};
-  parseFloatVec(line,ret,sizeof(ret));
-  return ZMath::float3(ret[0],ret[1],ret[2]);
+  parseFloatVec(line,(float*)ret,sizeof(ret));
+  return {ret[0],ret[1],ret[2]};
 }
 
 void ParserImplASCII::parseFloatVec(const char* line, float* target, size_t targetSize) const
@@ -371,9 +379,8 @@ void ParserImplASCII::parseRawVec(const char* line, uint8_t* target, size_t targ
     for(int r=0; r<2; ++r) {
       if('0'<=line[r] && line[r]<='9')
         c[r] = line[r]-'0';
-      else if('a'<=line[r] && line[r]<='f')
-        c[r] = line[r]-'a'+10;
-      else if('A'<=line[r] && line[r]<='F')
+      else if(('a'<=line[r] && line[r]<='f') ||
+              ('A'<=line[r] && line[r]<='F'))
         c[r] = line[r]-'a'+10;
       }
     line+=2;

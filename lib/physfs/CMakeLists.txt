@@ -11,12 +11,7 @@
 
 cmake_minimum_required(VERSION 2.8.12)
 
-if(APPLE)
-  project(PhysicsFS LANGUAGES C CXX OBJCXX)
-else()
-  project(PhysicsFS LANGUAGES C CXX)
-endif()
-
+project(PhysicsFS)
 set(PHYSFS_VERSION 3.1.0)
 
 # Increment this if/when we break backwards compatibility.
@@ -30,6 +25,7 @@ endif()
 include_directories(./src)
 
 if(APPLE)
+    set(OTHER_LDFLAGS ${OTHER_LDFLAGS} "-framework IOKit -framework Foundation")
     set(PHYSFS_M_SRCS src/physfs_platform_apple.m)
 endif()
 
@@ -80,6 +76,7 @@ set(PHYSFS_SRCS
     src/physfs_platform_windows.c
     src/physfs_platform_os2.c
     src/physfs_platform_qnx.c
+    src/physfs_platform_android.c
     src/physfs_archiver_dir.c
     src/physfs_archiver_unpacked.c
     src/physfs_archiver_grp.c
@@ -155,9 +152,6 @@ endif()
 option(PHYSFS_BUILD_STATIC "Build static library" TRUE)
 if(PHYSFS_BUILD_STATIC)
     add_library(physfs-static STATIC ${PHYSFS_SRCS})
-    if(APPLE)
-      target_link_libraries(physfs-static PRIVATE "-framework IOKit" "-framework Foundation")
-    endif()
     # Don't rename this on Windows, since DLLs will also produce an import
     #  library named "physfs.lib" which would conflict; Unix tend to like the
     #  same library name with a different extension for static libs, but
@@ -178,9 +172,6 @@ endif()
 option(PHYSFS_BUILD_SHARED "Build shared library" TRUE)
 if(PHYSFS_BUILD_SHARED)
     add_library(physfs SHARED ${PHYSFS_SRCS})
-    if(APPLE)
-      target_link_libraries(physfs-static PRIVATE "-framework IOKit" "-framework Foundation")
-    endif()
     set_target_properties(physfs PROPERTIES MACOSX_RPATH 1)
     set_target_properties(physfs PROPERTIES VERSION ${PHYSFS_VERSION})
     set_target_properties(physfs PROPERTIES SOVERSION ${PHYSFS_SOVERSION})
@@ -275,7 +266,7 @@ if(UNIX)
     add_custom_target(
         ${PHYSFS_TARGETNAME_UNINSTALL}
         "${CMAKE_CURRENT_SOURCE_DIR}/extras/uninstall.sh"
-        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
         COMMENT "Uninstall the project..."
     )
 endif()

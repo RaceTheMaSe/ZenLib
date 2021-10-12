@@ -13,8 +13,8 @@ namespace Daedalus
     class DaedalusVM;
 
     /**
-	 * Basic gametype. Needed for registering C_Class members and sky configuration in REGoth
-	 */
+   * Basic gametype. Needed for registering C_Class members and sky configuration in REGoth
+   */
     enum class GameType
     {
         GT_Gothic1,
@@ -23,23 +23,35 @@ namespace Daedalus
 
     namespace GEngineClasses
     {
-        const int MAX_CHAPTER = 5;
-        const int MAX_MISSIONS = 5;
-        const int MAX_HITCHANCE = 5;
-        const int ATR_INDEX_MAX = 8;
-        const int ITM_TEXT_MAX = 6;
-        const int GIL_MAX = 66;
+        // const int MAX_CHAPTER      = 5;
+        const int MAX_MISSIONS        = 5;
+        const int MAX_HITCHANCE       = 5;
+        // const int ATR_INDEX_MAX    = 8;
+        const int ITM_TEXT_MAX        = 6;
+        const int GIL_MAX             = 66;
         const int VFX_NUM_USERSTRINGS = 5;
 
         enum {
-          DAM_INDEX_BARRIER = 0,  //				 nur der Vollstandigkeit und Transparenz wegen hier definiert ( _NICHT_ verwenden )
+          DAM_INVALID =   0,
+          DAM_BARRIER =   1,
+          DAM_BLUNT   =   2,
+          DAM_EDGE    =   4,
+          DAM_FIRE    =   8,
+          DAM_FLY     =  16,
+          DAM_MAGIC   =  32,
+          DAM_POINT   =  64,
+          DAM_FALL    = 128
+          };
+        
+        enum {
+          DAM_INDEX_BARRIER = 0,  // nur der Vollstandigkeit und Transparenz wegen hier definiert ( _NICHT_ verwenden )
           DAM_INDEX_BLUNT   = 1,
           DAM_INDEX_EDGE,
           DAM_INDEX_FIRE,
           DAM_INDEX_FLY,
           DAM_INDEX_MAGIC,
           DAM_INDEX_POINT,
-          DAM_INDEX_FALL,//				 nur der Vollstandigkeit und Transparenz wegen hier definiert ( _NICHT_ verwenden )
+          DAM_INDEX_FALL,// nur der Vollstandigkeit und Transparenz wegen hier definiert ( _NICHT_ verwenden )
           DAM_INDEX_MAX
           };
 
@@ -66,9 +78,21 @@ namespace Daedalus
           NPCTYPE_BL_MAIN     = 7
           };
 
+        enum class ENPCTypeG1 : int32_t {
+          NPCTYPE_AMBIENT      = 0,
+          NPCTYPE_MAIN         = 1,
+          NPCTYPE_GUARD        = 2,
+          NPCTYPE_FRIEND       = 3,
+          NPCTYPE_MINE_AMBIENT = 4,
+          NPCTYPE_MINE_GUARD   = 5,
+          NPCTYPE_OW_AMBIENT   = 6,
+          NPCTYPE_OW_GUARD     = 7,
+          NPCTYPE_ROGUE        = 8
+          };
+
         enum Move : int32_t {
           MOVE_RUN          = 1,  // Opponents in my focus + who stands in between? (G)
-          MOVE_RUNBACK      = 2, 	// Opponents in my focus
+          MOVE_RUNBACK      = 2,  // Opponents in my focus
           MOVE_JUMPBACK     = 3,
           MOVE_TURN         = 4,  // Always up to opponents in focus (never interrupted by new action, at most by enemy attack)
           MOVE_STRAFE       = 5,  // (Direction is decided by the native-code)
@@ -78,15 +102,15 @@ namespace Daedalus
           MOVE_TRIPLEATTACK = 9,
           MOVE_WHIRLATTACK  = 10,
           MOVE_MASTERATTACK = 11,
-          MOVE_TURNTOHIT    = 15,	// Version > 0.92 => No Effect
-          MOVE_PARADE       = 17,	// (keine Attacke = oben)
+          MOVE_TURNTOHIT    = 15, // Version > 0.92 => No Effect
+          MOVE_PARADE       = 17, // (keine Attacke = oben)
           MOVE_STANDUP      = 18,
           MOVE_WAIT         = 19,
-          MOVE_WAIT_LONGER  = 23,	// Achtung: Muss 23 sein, da im Programm noch einige unbenutze Moves zwischen 19 und 22 gibt
-          MOVE_WAIT_EXT     = 24,	// Achtung: Muss 24 sein, da im Programm noch einige unbenutze Moves zwischen 19 und 22 gibt
+          MOVE_WAIT_LONGER  = 23, // Achtung: Muss 23 sein, da im Programm noch einige unbenutze Moves zwischen 19 und 22 gibt
+          MOVE_WAIT_EXT     = 24, // Achtung: Muss 24 sein, da im Programm noch einige unbenutze Moves zwischen 19 und 22 gibt
 
           MAX_MOVE          = 6,
-          MAX_FIGHTAI       = 50, // Number of existing Fight-AIs // Constant NOT redundant in the native-code, can be changed in scripts as required
+          MAX_FIGHTAI       = 50  // Number of existing Fight-AIs // Constant NOT redundant in the native-code, can be changed in scripts as required
           };
 
         // Music transition types
@@ -117,30 +141,30 @@ namespace Daedalus
             const int MAX_EVENTS = 10;
             const int MAX_SEL_ACTIONS = 5;
             const int MAX_USERVARS = 4;
-            const int SEL_EVENT_UNDEF = 0;
+            // const int SEL_EVENT_UNDEF = 0;
 
             enum ESelEvent
             {
-                SEL_EVENT_EXECUTE = 1,
-                SEL_EVENT_CHANGED = 2,
-                SEL_EVENT_LEAVE = 3,
-                SEL_EVENT_TIMER = 4,
-                SEL_EVENT_CLOSE = 5,
-                SEL_EVENT_INIT = 6,
+                SEL_EVENT_EXECUTE  = 1,
+                SEL_EVENT_CHANGED  = 2,
+                SEL_EVENT_LEAVE    = 3,
+                SEL_EVENT_TIMER    = 4,
+                SEL_EVENT_CLOSE    = 5,
+                SEL_EVENT_INIT     = 6,
                 SEL_EVENT_SEL_PREV = 7,
-                SEL_EVENT_SEL_NEXT = 8,
+                SEL_EVENT_SEL_NEXT = 8
             };
 
             enum ESelAction
             {
-                SEL_ACTION_UNDEF = 0,
-                SEL_ACTION_BACK = 1,
-                SEL_ACTION_STARTMENU = 2,
-                SEL_ACTION_STARTITEM = 3,
-                SEL_ACTION_CLOSE = 4,
-                SEL_ACTION_CONCOMMANDS = 5,
-                SEL_ACTION_PLAY_SOUND = 6,
-                SEL_ACTION_EXECCOMMANDS = 7,
+                SEL_ACTION_UNDEF        = 0,
+                SEL_ACTION_BACK         = 1,
+                SEL_ACTION_STARTMENU    = 2,
+                SEL_ACTION_STARTITEM    = 3,
+                SEL_ACTION_CLOSE        = 4,
+                SEL_ACTION_CONCOMMANDS  = 5,
+                SEL_ACTION_PLAY_SOUND   = 6,
+                SEL_ACTION_EXECCOMMANDS = 7
             };
         }  // namespace MenuConstants
 
@@ -159,34 +183,34 @@ namespace Daedalus
         struct C_ParticleFX : Instance
         {
             // 1) Emitter: zeitliches  Austoss-Verhalten, particles-per-second
-            float   ppsValue=0.f;
+            float   ppsValue        =0.f;
             ZString ppsScaleKeys_S;
-            int32_t ppsIsLooping=0;
-            int32_t ppsIsSmooth=0;
-            float   ppsFPS=0.f;
+            int32_t ppsIsLooping    =0;
+            int32_t ppsIsSmooth     =0;
+            float   ppsFPS          =0.f;
             ZString ppsCreateEm_S;
             float   ppsCreateEmDelay=0.f;
 
             // 2) Emitter: raeumliches Austoss-Verhalten
-            ZString shpType_S;  //	"point, line, box, circle, sphere, mesh"
-            ZString shpFOR_S;   //	"object,world"
+            ZString shpType_S;              //  "point, line, box, circle, sphere, mesh"
+            ZString shpFOR_S;               //  "object,world"
             ZString shpOffsetVec_S;
-            ZString shpDistribType_S;  //	"RAND, UNIFORM, WALK"
+            ZString shpDistribType_S;       //  "RAND, UNIFORM, WALK"
             float   shpDistribWalkSpeed=0.f;
             int32_t shpIsVolume=0;
-            ZString shpDim_S;   //	"", "30", "10 20 30", "30", "30", "" //	line: nur 1 Dimension !=0 // shape Dimensions
-            ZString shpMesh_S;  //	"cross.3ds"
+            ZString shpDim_S;               //  "", "30", "10 20 30", "30", "30", "" //  line: nur 1 Dimension !=0 // shape Dimensions
+            ZString shpMesh_S;              //  "cross.3ds"
             int32_t shpMeshRender_B=0;
-            ZString shpScaleKeys_S;  //	"[1.0] [0.8 0.9 0.2] [1.0]"
+            ZString shpScaleKeys_S;         //  "[1.0] [0.8 0.9 0.2] [1.0]"
             int32_t shpScaleIsLooping=0;
             int32_t shpScaleIsSmooth=0;
             float   shpScaleFPS=0.f;
 
             // 3) Partikel: Start Richtung/Speed:
-            ZString dirMode_S;  //	"DIR, TARGET, MESH_POLY"
-            ZString dirFOR_S;   //	"OBJECT, WORLD"
+            ZString dirMode_S;          //  "DIR, TARGET, MESH_POLY"
+            ZString dirFOR_S;           //  "OBJECT, WORLD"
             ZString dirModeTargetFOR_S;
-            ZString dirModeTargetPos_S;  //	"30 23 67"
+            ZString dirModeTargetPos_S; //  "30 23 67"
             float   dirAngleHead=0;
             float   dirAngleHeadVar=0;
             float   dirAngleElev=0;
@@ -200,49 +224,49 @@ namespace Daedalus
 
             // 5) Partikel: Flugverhalten (gravity, nicht-linear?, mesh-selfRot?,..)
             // grav: a) nur Y, b) XYZ, c) auf Ziel zu steuern
-            // ZString  flyMode_S;								//	"LINEAR, LIN_SINUS,.."
+            // ZString  flyMode_S;                //  "LINEAR, LIN_SINUS,.."
             // flyMeshSelfRotSpeedMin, flyMeshSelfRotSpeedMax
             ZString flyGravity_S;
             int32_t flyCollDet_B=0;
 
             // 6) Partikel: Visualisierung
-            ZString visName_S;         //	"NAME_V0_A0.TGA/.3DS"	(Variation, Animation)
-            ZString visOrientation_S;  //	"NONE, VELO"
-            int32_t visTexIsQuadPoly=1;      //	0=triMesh, 1=quadMesh
+            ZString visName_S;            //  "NAME_V0_A0.TGA/.3DS"  (Variation, Animation)
+            ZString visOrientation_S;     //  "NONE, VELO"
+            int32_t visTexIsQuadPoly=1;   //  0=triMesh, 1=quadMesh
             float   visTexAniFPS=0.f;
-            int32_t visTexAniIsLooping=0;  //	0=oneShot, 1=looping
-            // color		(nur Tex, lifeSpan-Sync)
+            int32_t visTexAniIsLooping=0; //  0=oneShot, 1=looping
+            // color    (nur Tex, lifeSpan-Sync)
             ZString visTexColorStart_S;
             ZString visTexColorEnd_S;
-            // size-ani		(nur Tex, lifeSpan-Sync)
+            // size-ani    (nur Tex, lifeSpan-Sync)
             ZString visSizeStart_S;
             float   visSizeEndScale=0;
-            // alpha		(lifeSpan-Sync)
+            // alpha    (lifeSpan-Sync)
             ZString visAlphaFunc_S;
-            float   visAlphaStart=0.f;
-            float   visAlphaEnd=0.f;
+            float   visAlphaStart     =0.f;
+            float   visAlphaEnd       =0.f;
 
             // 7) misc effects
 
             // trail
-            float   trlFadeSpeed=0.f;
+            float   trlFadeSpeed      =0.f;
             ZString trlTexture_S;
-            float   trlWidth=0.f;
+            float   trlWidth          =0.f;
 
             // marks
-            float   mrkFadeSpeed=0;
+            float   mrkFadeSpeed      =0;
             ZString mrkTexture_S;
-            float   mrkSize=0;
+            float   mrkSize           =0;
 
             // flocking
             ZString flockMode;
-            float   flockStrength=0.f;
+            float   flockStrength     =0.f;
 
             // local frame of reference override
             // calculates the position of the particles each frame relative to the emitters pos/rot
             // can be expensive
             // WARNING: in comb with flyCollDet_B this can be a performance-hog deluxe
-            int32_t useEmittersFOR=0;
+            int32_t useEmittersFOR    =0;
 
             // optional you can set a valid timeperiod in which this pfx should be rendered (e.g. "8 22": should be rendererd from 8 to 22 o clock")
             ZString timeStartEnd_S;
@@ -252,70 +276,70 @@ namespace Daedalus
         };
 
         struct CFx_Base : Instance {
-          ZString	    visName_S;
-          ZString	    visSize_S;
-          float	      visAlpha=0.f;
-          ZString	    visAlphaBlendFunc_S;
-          float       visTexAniFPS=0.f;
-          int32_t     visTexAniIsLooping=0;
-          ZString	    emTrjMode_S; // none, target, line, spline, random
-          ZString	    emTrjOriginNode;
-          ZString	    emTrjTargetNode;
-          float       emTrjTargetRange=0.f;
-          float	      emTrjTargetAzi=0.f;
-          float       emTrjTargetElev=0.f;
-          int32_t		  emTrjNumKeys=0;
-          int32_t		  emTrjNumKeysVar=0;
-          float	      emTrjAngleElevVar=0.f;
-          float	      emTrjAngleHeadVar=0.f;
-          float	      emTrjKeyDistVar=0.f;
-          ZString     emTrjLoopMode_S;
-          ZString     emTrjEaseFunc_S;
-          float     	emTrjEaseVel=0.f;
-          float	      emTrjDynUpdateDelay=0.f;
-          int32_t     emTrjDynUpdateTargetOnly=0;
-          ZString   	emFXCreate_S;
-          ZString   	emFXInvestOrigin_S;
-          ZString   	emFXInvestTarget_S;
-          float       emFXTriggerDelay=0.f;
-          int32_t     emFXCreatedOwnTrj=0;
-          ZString     emActionCollDyn_S;			// CREATE, BOUNCE, CREATEONCE, NORESP, COLLIDE
-          ZString     emActionCollStat_S;			// CREATE, BOUNCE, CREATEONCE, NORESP, COLLIDE, CREATEQUAD
-          ZString    	emFXCollStat_S;
-          ZString    	emFXCollDyn_S;
-          ZString     emFXCollDynPerc_S;
-          ZString    	emFXCollStatAlign_S;			// TRAJECTORY, COLLISIONNORMAL
-          ZString    	emFXCollDynAlign_S;
-          float	      emFXLifeSpan=0.f;
-          int32_t	    emCheckCollision=0;
-          int32_t     emAdjustShpToOrigin=0;
-          float	      emInvestNextKeyDuration=0.f;
-          float	      emFlyGravity=0.f;
-          ZString     emSelfRotVel_S;
-          ZString     userString[VFX_NUM_USERSTRINGS];
-          ZString     lightPresetName;
-          ZString     sfxID;
-          int32_t 	  sfxIsAmbient=0;
-          int32_t		  sendAssessMagic=0;
-          float	      secsPerDamage=0.f;
+          ZString      visName_S;
+          ZString      visSize_S;
+          float        visAlpha=0.f;
+          ZString      visAlphaBlendFunc_S;
+          float        visTexAniFPS=0.f;
+          int32_t      visTexAniIsLooping=0;
+          ZString      emTrjMode_S; // none, target, line, spline, random
+          ZString      emTrjOriginNode;
+          ZString      emTrjTargetNode;
+          float        emTrjTargetRange=0.f;
+          float        emTrjTargetAzi=0.f;
+          float        emTrjTargetElev=0.f;
+          int32_t      emTrjNumKeys=0;
+          int32_t      emTrjNumKeysVar=0;
+          float        emTrjAngleElevVar=0.f;
+          float        emTrjAngleHeadVar=0.f;
+          float        emTrjKeyDistVar=0.f;
+          ZString      emTrjLoopMode_S;
+          ZString      emTrjEaseFunc_S;
+          float        emTrjEaseVel=0.f;
+          float        emTrjDynUpdateDelay=0.f;
+          int32_t      emTrjDynUpdateTargetOnly=0;
+          ZString      emFXCreate_S;
+          ZString      emFXInvestOrigin_S;
+          ZString      emFXInvestTarget_S;
+          float        emFXTriggerDelay=0.f;
+          int32_t      emFXCreatedOwnTrj=0;
+          ZString      emActionCollDyn_S;   // CREATE, BOUNCE, CREATEONCE, NORESP, COLLIDE
+          ZString      emActionCollStat_S;  // CREATE, BOUNCE, CREATEONCE, NORESP, COLLIDE, CREATEQUAD
+          ZString      emFXCollStat_S;
+          ZString      emFXCollDyn_S;
+          ZString      emFXCollDynPerc_S;
+          ZString      emFXCollStatAlign_S; // TRAJECTORY, COLLISIONNORMAL
+          ZString      emFXCollDynAlign_S;
+          float        emFXLifeSpan=0.f;
+          int32_t      emCheckCollision=0;
+          int32_t      emAdjustShpToOrigin=0;
+          float        emInvestNextKeyDuration=0.f;
+          float        emFlyGravity=0.f;
+          ZString      emSelfRotVel_S;
+          ZString      userString[VFX_NUM_USERSTRINGS];
+          ZString      lightPresetName;
+          ZString      sfxID;
+          int32_t      sfxIsAmbient=0;
+          int32_t      sendAssessMagic=0;
+          float        secsPerDamage=0.f;
           };
 
         // particle effect related key vars
         struct C_ParticleFXEmitKey : Instance {
           // vars which influence all particles all time
-          ZString	visName_S;
+          ZString visName_S;
           float   visSizeScale=0.f;
-          float   scaleDuration=0.f;       // time to reach full scale at this key for relevant vars (size, alpha, etc.)
+          float   scaleDuration=0.f;     // time to reach full scale at this key for relevant vars (size, alpha, etc.)
 
           float   pfx_ppsValue=0.f;
           int     pfx_ppsIsSmoothChg=0;  // changes pps smoothing of pfx if set to 1 and pfx pps scale keys are set
           int     pfx_ppsIsLoopingChg=0; // changes looping of pfx if set to 1
           float   pfx_scTime=0.f;
-          ZString	pfx_flyGravity_S;
+          ZString pfx_flyGravity_S;
 
           // vars which influence particles at creation level only
           ZString pfx_shpDim_S;
-          int     pfx_shpIsVolumeChg=0;    // changes volume rendering of pfx if set to 1
+          int     pfx_shpIsVolumeChg=0;  // changes volume rendering of pfx if set to 1
           float   pfx_shpScaleFPS=0.f;
           float   pfx_shpDistribWalkSpeed=0.f;
           ZString pfx_shpOffsetVec_S;
@@ -328,9 +352,9 @@ namespace Daedalus
           float   pfx_lspPartAvg=0.f;
           float   pfx_visAlphaStart=0.f;
 
-          ZString	lightPresetName;
+          ZString lightPresetName;
           float   lightRange=0.f;
-          ZString	sfxID;
+          ZString sfxID;
           int     sfxIsAmbient=0;
           ZString emCreateFXID;
 
@@ -352,7 +376,7 @@ namespace Daedalus
                 MENU_DONTSCALE_DIM = 8,
                 MENU_DONTSCALE_POS = 16,
                 MENU_ALIGN_CENTER = 32,
-                MENU_SHOW_INFO = 64,
+                MENU_SHOW_INFO = 64
             };
 
             C_Menu() = default;
@@ -373,33 +397,33 @@ namespace Daedalus
         {
             enum EFlags : int32_t
             {
-                IT_CHROMAKEYED = 1,
-                IT_TRANSPARENT = 2,
-                IT_SELECTABLE = 4,
-                IT_MOVEABLE = 8,
-                IT_TXT_CENTER = 16,
-                IT_DISABLED = 32,
-                IT_FADE = 64,
-                IT_EFFECTS_NEXT = 128,
-                IT_ONLY_OUT_GAME = 256,
-                IT_ONLY_IN_GAME = 512,
-                IT_PERF_OPTION = 1024,
-                IT_MULTILINE = 2048,
-                IT_NEEDS_APPLY = 4096,
-                IT_NEEDS_RESTART = 8192,
-                IT_EXTENDED_MENU = 16384,
+                IT_CHROMAKEYED   =     1,
+                IT_TRANSPARENT   =     2,
+                IT_SELECTABLE    =     4,
+                IT_MOVEABLE      =     8,
+                IT_TXT_CENTER    =    16,
+                IT_DISABLED      =    32,
+                IT_FADE          =    64,
+                IT_EFFECTS_NEXT  =   128,
+                IT_ONLY_OUT_GAME =   256,
+                IT_ONLY_IN_GAME  =   512,
+                IT_PERF_OPTION   =  1024,
+                IT_MULTILINE     =  2048,
+                IT_NEEDS_APPLY   =  4096,
+                IT_NEEDS_RESTART =  8192,
+                IT_EXTENDED_MENU = 16384
             };
 
             enum EType : int32_t
             {
-                MENU_ITEM_UNDEF = 0,
-                MENU_ITEM_TEXT = 1,
-                MENU_ITEM_SLIDER = 2,
-                MENU_ITEM_INPUT = 3,
-                MENU_ITEM_CURSOR = 4,
+                MENU_ITEM_UNDEF     = 0,
+                MENU_ITEM_TEXT      = 1,
+                MENU_ITEM_SLIDER    = 2,
+                MENU_ITEM_INPUT     = 3,
+                MENU_ITEM_CURSOR    = 4,
                 MENU_ITEM_CHOICEBOX = 5,
-                MENU_ITEM_BUTTON = 6,
-                MENU_ITEM_LISTBOX = 7,
+                MENU_ITEM_BUTTON    = 6,
+                MENU_ITEM_LISTBOX   = 7
             };
 
             C_Menu_Item() = default;
@@ -434,25 +458,25 @@ namespace Daedalus
         {
             enum EAttributes : int32_t
             {
-                EATR_HITPOINTS = 0,
-                EATR_HITPOINTSMAX = 1,
-                EATR_MANA = 2,
-                EATR_MANAMAX = 3,
-                EATR_STRENGTH = 4,
-                EATR_DEXTERITY = 5,
-                EATR_REGENERATEHP = 6,
+                EATR_HITPOINTS      = 0,
+                EATR_HITPOINTSMAX   = 1,
+                EATR_MANA           = 2,
+                EATR_MANAMAX        = 3,
+                EATR_STRENGTH       = 4,
+                EATR_DEXTERITY      = 5,
+                EATR_REGENERATEHP   = 6,
                 EATR_REGENERATEMANA = 7,
 
-                EATR_MAX = 8
+                EATR_MAX            = 8
             };
 
             enum ENPCFlag : int32_t
             {
-                EFLAG_NONE = 0,
-                EFLAG_FRIENDS = 1 << 0,
-                EFLAG_IMMORTAL = 1 << 1,
-                EFLAG_GHOST = 1 << 2,
-                EFLAG_PROTECTED = 1 << 10,
+                EFLAG_NONE      = 0,
+                EFLAG_FRIENDS   = 1 << 0,
+                EFLAG_IMMORTAL  = 1 << 1,
+                EFLAG_GHOST     = 1 << 2,
+                EFLAG_PROTECTED = 1 << 10
             };
 
             C_Npc() = default;
@@ -513,9 +537,9 @@ namespace Daedalus
 
         struct C_Mission : Instance
         {
-            ZString name;  //	Name des Auftrages
+            ZString name;  //  Name des Auftrages
             ZString description;
-            int32_t duration;  //	Max. Dauer in Tageszeiten
+            int32_t duration;  //  Max. Dauer in Tageszeiten
             int32_t important;
 
             uint32_t offerConditions;
@@ -534,33 +558,33 @@ namespace Daedalus
             // Categories, found in the "mainflag"-field
             enum Categories
             {
-                ITM_CAT_NONE = 1 << 0,
-                ITM_CAT_NF = 1 << 1,
-                ITM_CAT_FF = 1 << 2,
-                ITM_CAT_MUN = 1 << 3,
-                ITM_CAT_ARMOR = 1 << 4,
-                ITM_CAT_FOOD = 1 << 5,
-                ITM_CAT_DOCS = 1 << 6,
+                ITM_CAT_NONE   = 1 << 0,
+                ITM_CAT_NF     = 1 << 1,
+                ITM_CAT_FF     = 1 << 2,
+                ITM_CAT_MUN    = 1 << 3,
+                ITM_CAT_ARMOR  = 1 << 4,
+                ITM_CAT_FOOD   = 1 << 5,
+                ITM_CAT_DOCS   = 1 << 6,
                 ITM_CAT_POTION = 1 << 7,
-                ITM_CAT_LIGHT = 1 << 8,
-                ITM_CAT_RUNE = 1 << 9,
-                ITM_CAT_MAGIC = 1 << 31, //FIXME
-                ITM_CAT_EQUIPABLE = ITM_CAT_NF | ITM_CAT_FF | ITM_CAT_ARMOR | ITM_CAT_RUNE | ITM_CAT_MAGIC,
+                ITM_CAT_LIGHT  = 1 << 8,
+                ITM_CAT_RUNE   = 1 << 9,
+                ITM_CAT_MAGIC  = 1u << 31,
+                ITM_CAT_EQUIPABLE = ITM_CAT_NF | ITM_CAT_FF | ITM_CAT_ARMOR | ITM_CAT_RUNE | ITM_CAT_MAGIC
             };
 
             enum Flags
             {
-                ITEM_DAG = 1 << 13,       //  Dagger
-                ITEM_SWD = 1 << 14,       //	Waffe wird wie ein Schwert behandelt
-                ITEM_AXE = 1 << 15,       //	Waffe wird wie eine Axt behandelt
-                ITEM_2HD_SWD = 1 << 16,   //	Waffe wird wie ein Zweihänder behandelt
-                ITEM_2HD_AXE = 1 << 17,   //	Waffe wird wie eine Streitaxt behandelt
-                ITEM_BOW = 1 << 19,       //	Waffe wird wie ein Bogen behandelt
-                ITEM_CROSSBOW = 1 << 20,  //	Waffe wird wie eine Armbrust behandelt
-                ITEM_AMULET = 1 << 22,
-                ITEM_RING = 1 << 11,
-                ITEM_BELT = 1 << 24,
-                ITEM_MISSION = 1 << 12,
+                ITEM_DAG      = 1 << 13,   //  Dagger
+                ITEM_SWD      = 1 << 14,   //  Waffe wird wie ein Schwert behandelt
+                ITEM_AXE      = 1 << 15,   //  Waffe wird wie eine Axt behandelt
+                ITEM_2HD_SWD  = 1 << 16,   //  Waffe wird wie ein Zweihänder behandelt
+                ITEM_2HD_AXE  = 1 << 17,   //  Waffe wird wie eine Streitaxt behandelt
+                ITEM_BOW      = 1 << 19,   //  Waffe wird wie ein Bogen behandelt
+                ITEM_CROSSBOW = 1 << 20,   //  Waffe wird wie eine Armbrust behandelt
+                ITEM_AMULET   = 1 << 22,
+                ITEM_RING     = 1 << 11,
+                ITEM_BELT     = 1 << 24,
+                ITEM_MISSION  = 1 << 12
             };
 
             C_Item()=default;
@@ -572,7 +596,7 @@ namespace Daedalus
             int32_t hp=0;
             int32_t hp_max=0;
 
-            int32_t mainflag=0, flags=0; // Hauptflag und weitere Flags
+            uint32_t mainflag=0, flags=0; // Hauptflag und weitere Flags
             int32_t weight=0, value=0;
 
             // Für Waffen
@@ -618,13 +642,13 @@ namespace Daedalus
             ZString visual;
 
             // Veränderung des NSC-Meshes beim Anlegen dieses Gegenstandes
-            ZString visual_change;  //	ASC - File
+            ZString visual_change;  //  ASC - File
             ZString effect;
             int32_t visual_skin=0;
 
             ZString scemeName;
             int32_t material=0;
-            // ZString	pfx								;		// Magic Weapon PFX
+            // ZString  pfx                ;    // Magic Weapon PFX
             int32_t munition=0;  // Instance of Munition
 
             int32_t spell=0;
@@ -647,23 +671,23 @@ namespace Daedalus
         struct C_Focus : Instance
         {
             /// für NSCs
-            float npc_longrange;           //	Zurufweite	( 20 m )
-            float npc_range1, npc_range2;  //	Reichweite
-            float npc_azi;                 //	Azimuth		( Seitenwinkel )
-            float npc_elevdo, npc_elevup;  //	Elevation	( Höhenwinkel  )
-            int32_t npc_prio;              //	Priorität
+            float npc_longrange{};             //  Zurufweite  ( 20 m )
+            float npc_range1{}, npc_range2{};  //  Reichweite
+            float npc_azi{};                   //  Azimuth    ( Seitenwinkel )
+            float npc_elevdo{}, npc_elevup{};  //  Elevation  ( Höhenwinkel  )
+            int32_t npc_prio{};                //  Priorität
 
             /// für ITEMs
-            float item_range1, item_range2;  //	Reichweite
-            float item_azi;                  //	Azimuth		( Seitenwinkel )
-            float item_elevdo, item_elevup;  //	Elevation	( Höhenwinkel  )
-            int32_t item_prio;               //	Priorität
+            float item_range1{}, item_range2{};  //  Reichweite
+            float item_azi{};                    //  Azimuth    ( Seitenwinkel )
+            float item_elevdo{}, item_elevup{};  //  Elevation  ( Höhenwinkel  )
+            int32_t item_prio{};                 //  Priorität
 
             /// für MOBs
-            float mob_range1, mob_range2;  //	Reichweite
-            float mob_azi;                 //	Azimuth		( Seitenwinkel )
-            float mob_elevdo, mob_elevup;  //	Elevation	( Höhenwinkel  )
-            int32_t mob_prio;              //	Priorität
+            float mob_range1{}, mob_range2{};  //  Reichweite
+            float mob_azi{};                   //  Azimuth    ( Seitenwinkel )
+            float mob_elevdo{}, mob_elevup{};  //  Elevation  ( Höhenwinkel  )
+            int32_t mob_prio{};                //  Priorität
         };
 
         struct SubChoice
@@ -677,7 +701,7 @@ namespace Daedalus
             C_Info()=default;
             int32_t  npc=0;
             int32_t  nr=0;
-            int32_t  important=0;  //	Wichtig Flag -> ansprechen
+            int32_t  important=0;  //  Wichtig Flag -> ansprechen
             uint32_t condition=0;
             uint32_t information=0;
             ZString  description;
@@ -747,26 +771,37 @@ namespace Daedalus
           ESubTransitionType transSubType=TRANSITION_SUB_TYPE_NULL;
           };
 
+        struct C_MusicJingle : Instance {
+          ZString            name;
+          int32_t            loop=0;
+          float              vol=0.f;
+          int32_t            transSubType=TRANSITION_SUB_TYPE_NULL;
+          };
+
         struct C_GilValues : Instance {
           C_GilValues() {
-            for(auto& i:jumpup_height)      i = 200;
-            for(auto& i:blood_max_distance) i = 1000;
-            for(auto& i:blood_amount)       i = 10;
-            for(auto& i:turn_speed)         i = 150;
+            std::fill(std::begin(jumpup_height)     ,std::end(jumpup_height)     , 200);
+            std::fill(std::begin(blood_disabled)    ,std::end(blood_disabled)    ,   0);
+            std::fill(std::begin(blood_max_distance),std::end(blood_max_distance),1000);
+            std::fill(std::begin(blood_amount)      ,std::end(blood_amount)      ,  10);
+            std::fill(std::begin(blood_flow)        ,std::end(blood_flow)        ,   0);
+            std::fill(std::begin(blood_emitter)     ,std::end(blood_emitter)     , "PFX_BLOOD");
+            std::fill(std::begin(blood_texture)     ,std::end(blood_texture)     , "ZBLOODSPLAT2.TGA");
+            std::fill(std::begin(turn_speed)        ,std::end(turn_speed)        , 150);
             }
           int32_t  water_depth_knee   [GIL_MAX]={};
           int32_t  water_depth_chest  [GIL_MAX]={};
-          int32_t  jumpup_height      [GIL_MAX]={};		//	DEFAULT = 200;
+          int32_t  jumpup_height      [GIL_MAX]={}; //  DEFAULT = 200;
           // int32_t  JUMPUP_FORCE       [GIL_MAX]={};
           int32_t  swim_time          [GIL_MAX]={};
           int32_t  dive_time          [GIL_MAX]={};
-          int32_t  step_height			  [GIL_MAX]={};
+          int32_t  step_height        [GIL_MAX]={};
           int32_t  jumplow_height     [GIL_MAX]={};
           int32_t  jumpmid_height     [GIL_MAX]={};
           int32_t  slide_angle        [GIL_MAX]={};
           int32_t  slide_angle2       [GIL_MAX]={};
-          int32_t  disable_autoroll   [GIL_MAX]={}; //	DEFAULT = 0					;  0 = Autoroll  enabled	/ 1 = Autoroll  disabled
-          int32_t  surface_align      [GIL_MAX]={}; //	DEFAULT = 0					;  0 = Alignment disabled	/ 1 = Alignment enabled
+          int32_t  disable_autoroll   [GIL_MAX]={}; //  DEFAULT = 0                 ;  0 = Autoroll  enabled  / 1 = Autoroll  disabled
+          int32_t  surface_align      [GIL_MAX]={}; //  DEFAULT = 0                 ;  0 = Alignment disabled  / 1 = Alignment enabled
           int32_t  climb_heading_angle[GIL_MAX]={};
           int32_t  climb_horiz_angle  [GIL_MAX]={};
           int32_t  climb_ground_angle [GIL_MAX]={};
@@ -777,15 +812,15 @@ namespace Daedalus
           int32_t  fight_range_1ha    [GIL_MAX]={};
           int32_t  fight_range_2hs    [GIL_MAX]={};
           int32_t  fight_range_2ha    [GIL_MAX]={};
-          int32_t  falldown_height    [GIL_MAX]={}; //									Wie tief Fallen ohne Schaden ?
-          int32_t  falldown_damage    [GIL_MAX]={}; //									Schaden für jeden weiteren angefangenen Meter.
-          int32_t  blood_disabled     [GIL_MAX]={}; //	DEFAULT = 0					;	Blut ganz ausschalten (z.B. bei Sekletten) ?
-          int32_t  blood_max_distance [GIL_MAX]={}; //	DEFAULT = 1000				;	Wie weit spritzt das Blut (in cm) ?
-          int32_t  blood_amount       [GIL_MAX]={}; //	DEFAULT = 10				;	Wie viel Blut ?
-          int32_t  blood_flow         [GIL_MAX]={}; //	DEFAULT = 0					;	Soll es sich langsam ausbreiten ?
-          ZString  blood_emitter      [GIL_MAX]={}; //	DEFAULT = "PFX_BLOOD"		;	Welcher Partikel-Emitter ?
-          ZString  blood_texture      [GIL_MAX]={}; //	DEFAULT = "ZBLOODSPLAT2.TGA";	Welche Textur ?
-          int32_t  turn_speed         [GIL_MAX]={}; //	DEFAULT = 150				;
+          int32_t  falldown_height    [GIL_MAX]={}; //                                 Wie tief Fallen ohne Schaden ?
+          int32_t  falldown_damage    [GIL_MAX]={}; //                                 Schaden für jeden weiteren angefangenen Meter.
+          int32_t  blood_disabled     [GIL_MAX]={}; //  DEFAULT = 0                 ;  Blut ganz ausschalten (z.B. bei Sekletten) ?
+          int32_t  blood_max_distance [GIL_MAX]={}; //  DEFAULT = 1000              ;  Wie weit spritzt das Blut (in cm) ?
+          int32_t  blood_amount       [GIL_MAX]={}; //  DEFAULT = 10                ;  Wie viel Blut ?
+          int32_t  blood_flow         [GIL_MAX]={}; //  DEFAULT = 0                 ;  Soll es sich langsam ausbreiten ?
+          ZString  blood_emitter      [GIL_MAX]={}; //  DEFAULT = "PFX_BLOOD"       ;  Welcher Partikel-Emitter ?
+          ZString  blood_texture      [GIL_MAX]={}; //  DEFAULT = "ZBLOODSPLAT2.TGA";  Welche Textur ?
+          int32_t  turn_speed         [GIL_MAX]={}; //  DEFAULT = 150               ;
           };
 
         struct C_FightAI : Instance {

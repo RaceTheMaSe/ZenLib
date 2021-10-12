@@ -22,12 +22,12 @@ Revision History:
 #ifndef ZTEX_H_INCLUDE_GUARD
 #define ZTEX_H_INCLUDE_GUARD
 
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace ZenLoad
 {
     /* ZenGin Texture - Render Formats */
-    typedef enum _ZTEX_FORMAT
+    enum ZTEX_FORMAT
     {
         ZTEXFMT_B8G8R8A8, /* 0, 32-bit ARGB pixel format with alpha, using 8 bits per channel */
         ZTEXFMT_R8G8B8A8, /* 1, 32-bit ARGB pixel format with alpha, using 8 bits per channel */
@@ -45,10 +45,10 @@ namespace ZenLoad
         ZTEXFMT_DXT4,     /* D, DXT4 compression texture format */
         ZTEXFMT_DXT5,     /* E, DXT5 compression texture format */
         ZTEXFMT_COUNT
-    } ZTEX_FORMAT;
+    };
 
     /* ZenGin Texture - Info Block */
-    typedef struct _ZTEX_INFO
+    struct ZTEX_INFO
     {
         uint32_t Format;    /* ZTEXFMT_ */
         uint32_t Width;     /* mipmap 0 */
@@ -57,7 +57,7 @@ namespace ZenLoad
         uint32_t RefWidth;  /* ingame x */
         uint32_t RefHeight; /* ingame y */
         uint32_t AvgColor;  /* A8R8G8B8 */
-    } ZTEX_INFO;
+    };
 
     /* ZenGin Texture - File Signature */
 #if !defined(__BIG_ENDIAN__) && !defined(_MAC)
@@ -70,29 +70,29 @@ namespace ZenLoad
 #define ZTEX_FILE_VERSION_0 0x00000000
 
     /* ZenGin Texture - File Header */
-    typedef struct _ZTEX_FILE_HEADER
+    struct ZTEX_FILE_HEADER
     {
         uint32_t Signature; /* ZTEX_FILE_SIGNATURE */
         uint32_t Version;   /* ZTEX_FILE_VERSION_0 */
         ZTEX_INFO TexInfo;
-    } ZTEX_FILE_HEADER;
+    };
 
     /* ZenGin Texture - Palette Entry */
-    typedef struct _ZTEX_PAL_ENTRY
+    struct ZTEX_PAL_ENTRY
     {
         uint8_t r;
         uint8_t g;
         uint8_t b;
-    } ZTEX_PAL_ENTRY;
+    };
 
     /* ZenGin Texture - Number of Palette Entries */
 #define ZTEX_PAL_ENTRIES 0x0100
 
     /* ZenGin Texture - Stored Palette */
-    typedef struct _ZTEX_PALETTE
+    struct ZTEX_PALETTE
     {
         ZTEX_PAL_ENTRY Entries[ZTEX_PAL_ENTRIES];
-    } ZTEX_PALETTE;
+    };
 
     /* OpenZE additions */
 #ifndef MAKEFOURCC
@@ -122,7 +122,7 @@ namespace ZenLoad
         DDSCAPS_MIPMAP = 0x00400000l    // Mipmap present
     };
 
-    typedef struct tagDDPIXELFORMAT
+    struct tagDDPIXELFORMAT
     {
         uint32_t dwSize;   // size of this structure (must be 32)
         uint32_t dwFlags;  // see DDPF_*
@@ -132,14 +132,14 @@ namespace ZenLoad
         uint32_t dwGBitMask;
         uint32_t dwBBitMask;
         uint32_t dwRGBAlphaBitMask;
-    } DDPIXELFORMAT;
+    };
 
-    typedef struct tagDDCAPS2
+    struct tagDDCAPS2
     {
         uint32_t dwCaps1;  // Zero or more of the DDSCAPS_* members
         uint32_t dwCaps2;  // Zero or more of the DDSCAPS2_* members
         uint32_t dwReserved[2];
-    } DDCAPS2;
+    };
 
     enum
     {
@@ -150,7 +150,7 @@ namespace ZenLoad
         DDPF_PALETTEINDEXED8 = 0x00000020l
     };
 
-    typedef struct tagDDSURFACEDESC2
+    struct tagDDSURFACEDESC2
     {
         uint32_t dwSize;   // size of this structure (must be 124)
         uint32_t dwFlags;  // combination of the DDSS_* flags
@@ -160,10 +160,10 @@ namespace ZenLoad
         uint32_t dwDepth;  // Depth of a volume texture
         uint32_t dwMipMapCount;
         uint32_t dwReserved1[11];
-        DDPIXELFORMAT ddpfPixelFormat;
-        DDCAPS2 ddsCaps;
+        tagDDPIXELFORMAT ddpfPixelFormat;
+        tagDDCAPS2 ddsCaps;
         uint32_t dwReserved2;
-    } DDSURFACEDESC2;
+    };
 
     struct ozRGBQUAD
     {

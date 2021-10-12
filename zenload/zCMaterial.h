@@ -18,7 +18,7 @@ namespace ZenLoad
         NUM_MAT_GROUPS
     };
 
-    static const char* MaterialGroupNames[MaterialGroup::NUM_MAT_GROUPS] = {
+    static const char* const MaterialGroupNames[MaterialGroup::NUM_MAT_GROUPS] = {
         "UNDEF",
         "METAL",
         "STONE",

@@ -7,7 +7,7 @@ namespace ZenLoad
 {
     /**
       * @brief Templated function-calls to read the right type of data
-      *		  and convert it to a string for the given type
+      *      and convert it to a string for the given type
       */
     template <typename T>
     inline void read(ZenParser& /*p*/, T& /*outData*/, const char* /*exName*/);

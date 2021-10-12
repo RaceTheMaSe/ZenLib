@@ -1,4 +1,6 @@
 #include "zCMeshSoftSkin.h"
+
+#include <cmath>
 #include <algorithm>
 #include <cfloat>
 #include <string>
@@ -36,24 +38,24 @@ void oBBox3d::load(ZenParser& parser)
 void oBBox3d::getAABB(ZMath::float3& min, ZMath::float3& max) const
 {
     const float sign[8][3] = {
-        -1, -1, -1,
-        -1, -1, +1,
-        -1, +1, -1,
-        -1, +1, +1,
-        +1, -1, -1,
-        +1, -1, +1,
-        +1, +1, -1,
-        +1, +1, +1};
+            {-1, -1, -1},
+            {-1, -1, +1},
+            {-1, +1, -1},
+            {-1, +1, +1},
+            {+1, -1, -1},
+            {+1, -1, +1},
+            {+1, +1, -1},
+            {+1, +1, +1}};
 
     min = {FLT_MAX, FLT_MAX, FLT_MAX};
     max = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
 
-    for (int i = 0; i < 8; i++)
+    for (auto i:sign)
     {
         ZMath::float3 point = center;
-        const ZMath::float3 axis0 = axis[0] * extends.x * sign[i][0];
-        const ZMath::float3 axis1 = axis[1] * extends.y * sign[i][1];
-        const ZMath::float3 axis2 = axis[2] * extends.z * sign[i][2];
+        const ZMath::float3 axis0 = axis[0] * extends.x * i[0];
+        const ZMath::float3 axis1 = axis[1] * extends.y * i[1];
+        const ZMath::float3 axis2 = axis[2] * extends.z * i[2];
 
         point.x += axis0.x + axis1.x + axis2.x;
         point.y += axis0.y + axis1.y + axis2.y;
@@ -74,7 +76,7 @@ void oBBox3d::getAABB(ZMath::float3& min, ZMath::float3& max) const
 */
 void zCMeshSoftSkin::readObjectData(ZenParser& parser) {
   // Information about a single chunk
-  BinaryChunkInfo chunkInfo;
+  BinaryChunkInfo chunkInfo{};
 
   // Read chunks until we left the virtual binary file or got to the end-chunk
   // Each chunk starts with a header (BinaryChunkInfo) which gives information
@@ -88,7 +90,7 @@ void zCMeshSoftSkin::readObjectData(ZenParser& parser) {
 
     switch(MSID_CHUNK(chunkInfo.id)) {
       case MSID_MESHSOFTSKIN: {
-        uint32_t version = parser.readBinaryDWord();
+        version = parser.readBinaryDWord();
 
         m_Mesh.readObjectData(parser);
 
@@ -142,15 +144,15 @@ void zCMeshSoftSkin::packMesh(PackedSkeletalMesh& mesh) const
     const uint8_t* stream = m_VertexWeightStream.data();
     //LogInfo() << "Stream size: " << m_VertexWeightStream.size();
 
-    for(size_t i=0; i<vertices.size(); ++i) {
+    for(auto & vertex:vertices) {
       // Layout:
-      //	uint32_t: numWeights
-      //	numWeights* zTWeightEntry: weights
+      //  uint32_t: numWeights
+      //  numWeights* zTWeightEntry: weights
       uint32_t numWeights = 0;
       std::memcpy(&numWeights,stream,sizeof(numWeights)); stream+=sizeof(numWeights);
 
       for(size_t j=0; j<numWeights; j++) {
-        float weight;
+        float weight = 0;
         std::memcpy(&weight,stream,sizeof(weight)); stream+=sizeof(weight);
 
         ZMath::float3 localVertexPosition;
@@ -159,9 +161,9 @@ void zCMeshSoftSkin::packMesh(PackedSkeletalMesh& mesh) const
         uint8_t nodeIndex = 0;
         std::memcpy(&nodeIndex,stream,sizeof(nodeIndex)); stream+=sizeof(nodeIndex);
 
-        vertices[i].BoneIndices[j]    = nodeIndex;
-        vertices[i].LocalPositions[j] = localVertexPosition;
-        vertices[i].Weights[j]        = weight;
+        vertex.BoneIndices[j]    = nodeIndex;
+        vertex.LocalPositions[j] = localVertexPosition;
+        vertex.Weights[j]        = weight;
         }
       }
 
@@ -183,21 +185,20 @@ void zCMeshSoftSkin::packMesh(PackedSkeletalMesh& mesh) const
     for(size_t s=0; s<m_Mesh.getNumSubmeshes(); s++) {
       const zCProgMeshProto::SubMesh& sm = m_Mesh.getSubmesh(s);
       // Get data
-      for(size_t i=0; i<sm.m_WedgeList.size(); ++i) {
-        const zWedge&  wedge = sm.m_WedgeList[i];
-        SkeletalVertex v     = vertices[wedge.m_VertexIndex];
+      for(const auto & wedge:sm.m_WedgeList) {
+         SkeletalVertex v     = vertices[wedge.m_VertexIndex];
 
         v.Normal   = wedge.m_Normal;
         v.TexCoord = wedge.m_Texcoord;
-        v.Color    = 0xFFFFFFFF;  // TODO: Apply color from material!
+        v.Color    = sm.m_Material.color;
         *vbo = v;
         ++vbo;
         }
 
       // And get the indices
-      for(size_t i=0; i<sm.m_TriangleList.size(); ++i) {
-        for(int j=0; j<3; j++) {
-          *ibo = sm.m_TriangleList[i].m_Wedges[j] + meshVxStart;
+      for(auto i:sm.m_TriangleList) {
+        for(auto m_Wedge:i.m_Wedges) {
+          *ibo = m_Wedge + meshVxStart;
           ++ibo;
           }
         }

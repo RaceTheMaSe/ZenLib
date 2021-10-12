@@ -1,7 +1,12 @@
 #include "zCVob.h"
+#include <exception>
+#include <stdexcept>
 
 #include "zenParserPropRead.h"
 #include "parserImpl.h"
+#include "utils/logger.h"
+#include "zenload/zTypes.h"
+#include "zenload/zenParser.h"
 
 using namespace ZenLoad;
 
@@ -9,29 +14,29 @@ using namespace ZenLoad;
 struct packedVobData {
   ZMath::float3 bbox3DWS[2];
   ZMath::float3 positionWS;
-  zMAT3 trafoRotWS;
+  zMAT3 trafoRotWS{};
 
   struct packedBitField {
-    uint8_t showVisual : 1;
-    uint8_t visualCamAlign : 2;
-    uint8_t cdStatic : 1;
-    uint8_t cdDyn : 1;
-    uint8_t staticVob : 1;
-    uint8_t dynShadow : 2;
-    uint8_t hasPresetName : 1;
-    uint8_t hasVobName : 1;
-    uint8_t hasVisualName : 1;
+    uint8_t showVisual              : 1;
+    uint8_t visualCamAlign          : 2;
+    uint8_t cdStatic                : 1;
+    uint8_t cdDyn                   : 1;
+    uint8_t staticVob               : 1;
+    uint8_t dynShadow               : 2;
+    uint8_t hasPresetName           : 1;
+    uint8_t hasVobName              : 1;
+    uint8_t hasVisualName           : 1;
     uint8_t hasRelevantVisualObject : 1;
-    uint8_t hasAIObject : 1;
-    uint8_t hasEventManObject : 1;
-    uint8_t physicsEnabled : 1;
-    uint8_t visualAniMode : 2;
-    uint8_t zbias : 5;
-    uint8_t bAmbient : 1;
-    } bitfield;
+    uint8_t hasAIObject             : 1;
+    uint8_t hasEventManObject       : 1;
+    uint8_t physicsEnabled          : 1;
+    uint8_t visualAniMode           : 2;
+    uint8_t zbias                   : 5;
+    uint8_t bAmbient                : 1;
+    } bitfield{};
 
-  float visualAniStrength;
-  float vobFarClipZ;
+  float visualAniStrength{};
+  float vobFarClipZ{};
   };
 #pragma pack(pop)
 
@@ -66,9 +71,10 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
   parser.getImpl()->readEntry("", info.pack);
   bool hasRelevantVisualObject = true;
   bool hasAIObject             = true;
+  bool hasEventManObject       = false;
 
   if(info.pack) {
-    packedVobData pd;
+    packedVobData pd{};
     parser.getImpl()->readEntry("", &pd, sizeof(pd));
 
     info.bbox[0]               = pd.bbox3DWS[0];
@@ -100,6 +106,7 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
 
     hasRelevantVisualObject = pd.bitfield.hasRelevantVisualObject;
     hasAIObject             = pd.bitfield.hasAIObject;
+    hasEventManObject       = pd.bitfield.hasEventManObject;
     } else {
     auto& rd = *parser.getImpl();
     rd.readEntry("presetName", info.presetName);
@@ -119,10 +126,8 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
       rd.readEntry("staticVob", info.staticVob);
       rd.readEntry("dynShadow", info.dynamicShadow);
       }
-
-    rd.readEntry("visualAniMode", reinterpret_cast<uint8_t&>(info.visualAniMode));
-
-    if(version==ZenParser::FileVersion::Gothic2) {
+    else if(version==ZenParser::FileVersion::Gothic2) {
+      rd.readEntry("visualAniMode",         reinterpret_cast<uint8_t&>(info.visualAniMode));
       rd.readEntry("visualAniModeStrength", info.visualAniModeStrength);
       rd.readEntry("vobFarClipZScale",      info.vobFarClipScale);
       rd.readEntry("cdStatic",              info.cdStatic);
@@ -147,7 +152,24 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
     // Skip ai-chunk
     ZenParser::ChunkHeader tmph;
     parser.readChunkStart(tmph);
-    parser.skipChunk();
+    info.aiReference = tmph.objectID; // FIXME: whats the purpose of this data
+    if(!parser.readChunkEnd())
+      parser.skipChunk();
+    }
+
+  if(hasEventManObject) { // not sure about order between this and AI ... sure its after visual
+    ZenParser::ChunkHeader tmph;
+    if(parser.readChunkStart(tmph)) {
+      zCEventManagerData emd;
+      parser.getImpl()->readEntry("cleared", emd.cleared);
+      parser.getImpl()->readEntry("active",  emd.active);
+      ZenParser::ChunkHeader emCutscene;
+      if(parser.readChunkStart(emCutscene)) {
+        // no data here
+        parser.readChunkEnd();
+        }
+      parser.readChunkEnd();
+      }
     }
 
   // Generate world-matrix
@@ -172,6 +194,11 @@ static void read_zCVob_zCVobSpot(zCVobData &info, ZenParser &parser, ZenParser::
   info.vobType = zCVobData::VT_zCVobSpot;
   }
 
+static void read_zCVob_zCVobStair(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  info.vobType = zCVobData::VT_zCVobStair;
+  }
+
 static void read_zCVob_zCVobStartpoint(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
   read_zCVob(info,parser,version);
   info.vobType = zCVobData::VT_zCVobStartpoint;
@@ -183,8 +210,8 @@ static void read_zCMessageFilter(zCVobData &info, ZenParser &parser, ZenParser::
   auto& rd = *parser.getImpl();
   info.vobType = zCVobData::VT_zCMessageFilter;
   rd.readEntry("triggerTarget", info.zCMessageFilter.triggerTarget);
-  rd.readEntry("onTrigger",     reinterpret_cast<uint8_t&>(info.zCMessageFilter.onTrigger));
-  rd.readEntry("onUntrigger",   reinterpret_cast<uint8_t&>(info.zCMessageFilter.onUntrigger));
+  rd.readEntry("onTrigger",     reinterpret_cast<uint32_t&>(info.zCMessageFilter.onTrigger));
+  rd.readEntry("onUntrigger",   reinterpret_cast<uint32_t&>(info.zCMessageFilter.onUntrigger));
   }
 
 static void read_zCCodeMaster(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
@@ -197,7 +224,10 @@ static void read_zCCodeMaster(zCVobData &info, ZenParser &parser, ZenParser::Fil
   rd.readEntry("orderRelevant",        info.zCCodeMaster.orderRelevant);
   rd.readEntry("firstFalseIsFailure",  info.zCCodeMaster.firstFalseIsFailure);
   rd.readEntry("triggerTargetFailure", info.zCCodeMaster.triggerTargetFailure);
-  rd.readEntry("untriggerCancels",     info.zCCodeMaster.untriggerCancels);
+  if(parser.getZenHeader().fileType==ZenLoad::ZenParser::FT_ASCII)
+    rd.readEntry("untriggerCancels",   info.zCCodeMaster.untriggerCancels);
+  else
+    rd.readEntry("untriggeredCancels", info.zCCodeMaster.untriggerCancels);
   rd.readEntry("", count);
   info.zCCodeMaster.slaveVobName.resize(count);
   for(size_t i=0; i<info.zCCodeMaster.slaveVobName.size(); ++i) {
@@ -230,14 +260,89 @@ static void read_zCVob_zCTrigger_zCTriggerUntouch(zCVobData &info, ZenParser &pa
   rd.readEntry("triggerTarget", info.zCTriggerUntouch.triggerTarget);
   }
 
-static void read_zCVob_zCTrigger_zCMoverControler(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+static void read_zCVob_zCTrigger_zCMoverController(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
   read_zCVob(info,parser,version);
 
   auto& rd = *parser.getImpl();
-  info.vobType = zCVobData::VT_zCMoverControler;
-  rd.readEntry("triggerTarget", info.zCMoverControler.triggerTarget);
-  rd.readEntry("moverMessage",  reinterpret_cast<uint8_t&>(info.zCMoverControler.moverMessage));
-  rd.readEntry("gotoFixedKey",  info.zCMoverControler.gotoFixedKey);
+  info.vobType = zCVobData::VT_zCMoverController;
+  rd.readEntry("triggerTarget", info.zCMoverController.triggerTarget);
+  rd.readEntry("moverMessage",  reinterpret_cast<uint32_t&>(info.zCMoverController.moverMessage));
+  rd.readEntry("gotoFixedKey",  info.zCMoverController.gotoFixedKey);
+  }
+
+static void read_zCVob_zCCamTrj(zCVobData &info, ZenParser &parser, const ZenParser::ChunkHeader& header, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCCamTraj_KeyFrame;
+  info.aiReference = header.objectID; // FIXME: other field than aiReference
+  if(parser.getZenHeader().fileType==ZenLoad::ZenParser::FT_ASCII && version==ZenLoad::ZenParser::FileVersion::Gothic1) { // FIXME: not sure but there are two CSCamera versions, one with more data and one with less
+    rd.readEntry("sleepMode",   info.zCCSCamera.sleepMode,true);
+    rd.readEntry("nextOnTimer", info.zCCSCamera.nextOnTimer,true);
+    }
+  rd.readEntry("time"               , info.zCCamTraj_KeyFrame.time);
+  rd.readEntry("angleRollDeg"       , info.zCCamTraj_KeyFrame.angleRollDeg);
+  rd.readEntry("camFOVScale"        , info.zCCamTraj_KeyFrame.camFOVScale);
+  rd.readEntry("motionType"         , reinterpret_cast<uint32_t&>(info.zCCamTraj_KeyFrame.motionType));
+  rd.readEntry("motionTypeFOV"      , reinterpret_cast<uint32_t&>(info.zCCamTraj_KeyFrame.motionTypeFOV));
+  rd.readEntry("motionTypeRoll"     , reinterpret_cast<uint32_t&>(info.zCCamTraj_KeyFrame.motionTypeRoll));
+  rd.readEntry("motionTypeTimeScale", reinterpret_cast<uint32_t&>(info.zCCamTraj_KeyFrame.motionTypeTimeScale));
+  rd.readEntry("tension"            , info.zCCamTraj_KeyFrame.details.tension);
+  rd.readEntry("bias"               , info.zCCamTraj_KeyFrame.details.bias);
+  rd.readEntry("continuity"         , info.zCCamTraj_KeyFrame.details.continuity);
+  rd.readEntry("timeScale"          , info.zCCamTraj_KeyFrame.details.timeScale);
+  rd.readEntry("timeIsFixed"        , info.zCCamTraj_KeyFrame.details.timeIsFixed);
+  rd.readEntry(""                   , &info.zCCamTraj_KeyFrame.originalPose, sizeof(info.zCCamTraj_KeyFrame.originalPose));
+  }
+
+static void read_zCVob_zCCSCamera(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCCSCamera;
+  if(parser.getZenHeader().fileType==ZenLoad::ZenParser::FT_ASCII && version==ZenLoad::ZenParser::FileVersion::Gothic1) {
+    rd.readEntry("sleepMode",   info.zCCSCamera.sleepMode,true);
+    rd.readEntry("nextOnTimer", info.zCCSCamera.nextOnTimer,true);
+    }
+  rd.readEntry("camTrjFOR"   , reinterpret_cast<uint32_t&>(info.zCCSCamera.camTrj));
+  rd.readEntry("targetTrjFOR", reinterpret_cast<uint32_t&>(info.zCCSCamera.targetTrj));
+  rd.readEntry("loopMode"    , reinterpret_cast<uint32_t&>(info.zCCSCamera.loopMode));
+  rd.readEntry("splLerpMode" , reinterpret_cast<uint32_t&>(info.zCCSCamera.splLerpMode));
+  rd.readEntry("ignoreFORVobRotCam"            , info.zCCSCamera.ignoreFORVobRotCam);
+  rd.readEntry("ignoreFORVobRotTarget"         , info.zCCSCamera.ignoreFORVobRotTarget);
+  rd.readEntry("adaptToSurroundings"           , info.zCCSCamera.adaptToSurroundings);
+  rd.readEntry("easeToFirstKey"                , info.zCCSCamera.easeToFirstKey);
+  rd.readEntry("easeFromLastKey"               , info.zCCSCamera.easeFromLastKey);
+  rd.readEntry("totalTime"                     , info.zCCSCamera.totalTime);
+  rd.readEntry("autoCamFocusVobName"           , info.zCCSCamera.autoCamFocusVobName);
+  rd.readEntry("autoCamPlayerMovable"          , info.zCCSCamera.autoCamPlayerMovable);
+  rd.readEntry("autoCamUntriggerOnLastKey"     , info.zCCSCamera.autoCamUntriggerOnLastKey);
+  rd.readEntry("autoCamUntriggerOnLastKeyDelay", info.zCCSCamera.autoCamUntriggerOnLastKeyDelay);
+
+  uint32_t numPos=0;
+  rd.readEntry("", numPos);
+  uint32_t numTargets=0;
+  rd.readEntry("", numTargets);
+  for(size_t c=0;c<numPos;++c) {
+    ZenParser::ChunkHeader hdr;
+    rd.readChunkStart(hdr);
+    zCVobData key;
+    ZenLoad::zCVob::readObjectData(key,parser,hdr,version);
+    info.zCCSCamera.camSpline.emplace_back(key);
+    }
+  for(size_t c=0;c<numTargets;++c) {
+    ZenParser::ChunkHeader hdr;
+    rd.readChunkStart(hdr);
+    zCVobData key;
+    ZenLoad::zCVob::readObjectData(key,parser,hdr,version);
+    info.zCCSCamera.targetSpline.emplace_back(key);
+    }
+  if(parser.getZenHeader().fileType==ZenLoad::ZenParser::FT_ASCII && version==ZenLoad::ZenParser::FileVersion::Gothic1) {
+    rd.readEntry("paused",       info.zCCSCamera.paused,true);
+    rd.readEntry("started",      info.zCCSCamera.started,true);
+    rd.readEntry("gotoTimeMode", info.zCCSCamera.gotoTimeMode,true);
+    rd.readEntry("csTime",       info.zCCSCamera.csTime,true);
+    }
   }
 
 static void read_zCVob_zCTrigger_zCTriggerList(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
@@ -255,11 +360,11 @@ static void read_zCVob_zCTrigger_zCTriggerList(zCVobData &info, ZenParser &parse
     char fireDelay    [64]={};
 
     if(parser.getZenHeader().fileType==ZenLoad::ZenParser::FT_ASCII)
-      std::snprintf(triggerTarget,sizeof(triggerTarget),"triggerTarget%d",int(i)); else
-      std::snprintf(triggerTarget,sizeof(triggerTarget),"slaveVobName%d", int(i));
+      std::snprintf((char*)triggerTarget,sizeof(triggerTarget),"triggerTarget%d",int(i)); else
+      std::snprintf((char*)triggerTarget,sizeof(triggerTarget),"slaveVobName%d", int(i));
 
-    rd.readEntry(triggerTarget, info.zCTriggerList.list[i].triggerTarget);
-    rd.readEntry(fireDelay,     info.zCTriggerList.list[i].fireDelay);
+    rd.readEntry((char*)triggerTarget, info.zCTriggerList.list[i].triggerTarget);
+    rd.readEntry((char*)fireDelay,     info.zCTriggerList.list[i].fireDelay);
     }
   }
 
@@ -294,6 +399,10 @@ static void read_zCVob_oCMOB_oCMobInter(zCVobData &info, ZenParser &parser, ZenP
 
   auto& rd = *parser.getImpl();
   info.vobType = zCVobData::VT_oCMobInter;
+  if(parser.getZenHeader().fileType==ZenParser::EFileType::FT_ASCII && version==ZenLoad::ZenParser::FileVersion::Gothic1) { // FIXME: relax this condition if known if this applies to only gothic 1 asciis or also binSafe
+    rd.readEntry("state"      , info.oCMobInter.state,true);
+    rd.readEntry("stateTarget", info.oCMobInter.stateTarget,true);
+    }
   rd.readEntry("stateNum",      info.oCMobInter.stateNum);
   rd.readEntry("triggerTarget", info.oCMobInter.triggerTarget);
   rd.readEntry("useWithItem",   info.oCMobInter.useWithItem);
@@ -345,6 +454,11 @@ static void read_zCVob_oCMOB_oCMobInter_oCMobContainer(zCVobData &info, ZenParse
   rd.readEntry("keyInstance", info.oCMobLockable.keyInstance);
   rd.readEntry("pickLockStr", info.oCMobLockable.pickLockStr);
   rd.readEntry("contains",    info.oCMobContainer.contains);
+  }
+
+static void read_zCVob_oCMOB_oCMobInter_oCMobWheel(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob_oCMOB_oCMobInter(info,parser,version);
+  info.vobType = zCVobData::VT_oCMobWheel;
   }
 
 static void read_LightData(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
@@ -475,6 +589,54 @@ static void read_zCVob_oCZoneMusic_oCZoneMusicDefault(zCVobData &info, ZenParser
   info.vobType = zCVobData::VT_oCZoneMusicDefault;
   }
 
+static void read_zCVob_zCVobReverb(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCZoneReverb;
+  rd.readEntry("reverbPreset",   info.zCZoneReverb.reverbPreset);
+  rd.readEntry("reverbWeight",   info.zCZoneReverb.reverbWeight);
+  rd.readEntry("innerRangePerc", info.zCZoneReverb.innerRangePerc);
+  }
+
+static void read_zCVob_zCVobReverb_zCVobReverbDefault(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob_zCVobReverb(info,parser,version);
+  info.vobType = zCVobData::VT_zCZoneReverbDefault;
+  }
+
+static void read_zCVob_oCZoneZFog(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_ocZoneFog;
+  rd.readEntry("fogRangeCenter", info.zCZoneZFog.fogRangeCenter);
+  rd.readEntry("innerRangePerc", info.zCZoneZFog.innerRangePerc);
+  rd.readColor("fogColor",       info.zCZoneZFog.fogColor);
+  if(version==ZenParser::FileVersion::Gothic2) {
+    rd.readEntry("fadeOutSky",     info.zCZoneZFog.fadeOutSky);
+    rd.readEntry("overrideColor",  info.zCZoneZFog.overrideColor);
+    }
+  }
+
+static void read_zCVob_oCZoneZFog_zCZoneZFogDefault(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob_oCZoneZFog(info,parser,version);
+  info.vobType = zCVobData::VT_ocZoneFogDefault;
+  }
+
+static void read_zCVob_zCZoneVobFarPlane(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCZoneVobFarPlane;
+  rd.readEntry("vobFarPlaneZ", info.zCZoneVobFarPlane.farPlaneZ);
+  rd.readEntry("innerRangePerc", info.zCZoneVobFarPlane.innerRangePerc);
+  }
+
+static void read_zCVob_zCZoneVobFarPlane_zCZoneVobFarPlaneDefault(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob_zCZoneVobFarPlane(info,parser,version);
+  info.vobType = zCVobData::VT_zCZoneVobFarPlaneDefault;
+  }
+
 static void read_zCVob_zCTrigger_zCMover(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version){
   read_zCVob_zCTrigger(info,parser,version);
   uint16_t numKeyframes=0;
@@ -520,19 +682,35 @@ static void read_zCVob_zCTrigger_zCTriggerWorldStart(zCVobData &info, ZenParser 
   read_zCVob(info,parser,version);
 
   auto& rd = *parser.getImpl();
-  info.vobType = zCVobData::VT_oCTriggerWorldStart;
+  info.vobType = zCVobData::VT_zCTriggerWorldStart;
   rd.readEntry("triggerTarget",     info.oCTriggerWorldStart.triggerTarget);
   rd.readEntry("fireOnlyFirstTime", info.oCTriggerWorldStart.fireOnlyFirstTime);
   }
 
-static void read_zCVob_zCPFXControler(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+static void read_zCVob_zCPFXController(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
   read_zCVob(info,parser,version);
 
   auto& rd = *parser.getImpl();
-  info.vobType = zCVobData::VT_zCPFXControler;
-  rd.readEntry("pfxName",         info.zCPFXControler.pfxName);
-  rd.readEntry("killVobWhenDone", info.zCPFXControler.killVobWhenDone);
-  rd.readEntry("pfxStartOn",      info.zCPFXControler.pfxStartOn);
+  info.vobType = zCVobData::VT_zCPFXController;
+  rd.readEntry("pfxName",         info.zCPFXController.pfxName);
+  rd.readEntry("killVobWhenDone", info.zCPFXController.killVobWhenDone);
+  rd.readEntry("pfxStartOn",      info.zCPFXController.pfxStartOn);
+  }
+
+static void read_zCVob_zcVobAnimate(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCVobAnimate;
+  rd.readEntry("startOn", info.zCVobAnimate.startOn);
+  }
+
+static void read_zCVob_zcVobLensFlare(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCVobLensFlare;
+  rd.readEntry("lensFlareFx", info.zCVobLensFlare.lensFlareFx);
   }
 
 static void read_zCVob_oCTouchDamage(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
@@ -556,11 +734,89 @@ static void read_zCVob_oCTouchDamage(zCVobData &info, ZenParser &parser, ZenPars
   rd.readEntry("damageCollType",       info.oCTouchDamage.damageCollType);
   }
 
+static void read_zCVob_zCTouchAnimate(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  }
+
+static void read_zCVob_zCTouchAnimate_zCTouchAnimateSound(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob_zCTouchAnimate(info,parser,version);
+
+  auto& rd = *parser.getImpl();
+  info.vobType = zCVobData::VT_zCTouchAnimateSound;
+  rd.readEntry("sfxTouch", info.zCTouchAnimateSound.sfxTouch);
+  }
+
+static void read_zCVob_zCEarthquake(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  
+  info.vobType = zCVobData::VT_zCEarthQuake;
+  auto& rd = *parser.getImpl();
+  rd.readEntry("radius", info.zCEarthQuake.radius);
+  rd.readEntry("timeSec", info.zCEarthQuake.timeSec);
+  rd.readEntry("amplitudeCM", info.zCEarthQuake.amplitudeCM);
+  }
+
+static void read_zCVob_zCVobScreenFX(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  info.vobType = zCVobData::VT_zCVobScreenFX;
+  }
+
+static void read_zCVob_zCMusicControler(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  info.vobType = zCVobData::VT_zCMusicControler;
+  }
+
+static void read_zCVob_ocVisualFX(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  info.vobType = zCVobData::VT_ocVisualFX;
+  }
+
+static void read_ocVisFX_MultiTarget(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  read_zCVob(info,parser,version);
+  info.vobType = zCVobData::VT_ocVisFX_MultiTarget;
+  }
+
+static void read_zCLensFlare(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  info.vobType = zCVobData::VT_zCLensFlare;
+  auto& rd = *parser.getImpl();
+
+  rd.readEntry("texName",  info.zCFlare.texName);
+  rd.readEntry("type",     reinterpret_cast<uint32_t&>(info.zCFlare.type));
+  rd.readEntry("size",     info.zCFlare.size);
+  rd.readEntry("alpha",    info.zCFlare.alpha);
+  rd.readEntry("rangeMin", info.zCFlare.rangeMin);
+  rd.readEntry("rangeMax", info.zCFlare.rangeMax,true);
+  rd.readEntry("posScale", info.zCFlare.posScale);
+  rd.readEntry("fadeScale",info.zCFlare.fadeScale,true);
+  }
+
+static void read_zCLensFlareFX(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+  info.vobType = zCVobData::VT_zCLensFlareFX;
+  auto& rd = *parser.getImpl();
+  rd.readEntry("name",  info.zcLensFlareFX.name);
+  int numFlares;
+  rd.readEntry("numFlares",numFlares);
+  for(int i=0;i<numFlares;++i) {
+    ZenParser::ChunkHeader header;
+    parser.readChunkStart(header);
+    zCVobData flare;
+    read_zCLensFlare(flare,parser,version);
+    info.childVobs.emplace_back(flare);
+    parser.readChunkEnd();
+    }
+  rd.readEntry("fadeScale",info.zCFlare.posScale,true);
+  }
+
+static void read_zReference(zCVobData &info, ZenParser &parser, const ZenParser::ChunkHeader& header, ZenParser::FileVersion version) {
+  info.vobType = zCVobData::VT_zReference;
+  info.aiReference = header.objectID; // FIXME: aiReference may be the wrong field to write into
+  }
+
 static void readObjectData(zCVobData &info, ZenParser &parser,
                            const ZenParser::ChunkHeader& header, ZenParser::FileVersion version) {
   switch(header.classId) {
     case ZenParser::zUnknown:
-    case ZenParser::zReference:
+      return;
     case ZenParser::zCProgMeshProto:
     case ZenParser::zCCSLib:
     case ZenParser::zCWorld:
@@ -569,15 +825,18 @@ static void readObjectData(zCVobData &info, ZenParser &parser,
     case ZenParser::zCModel:
     case ZenParser::zCMorphMesh:
     case ZenParser::zCAICamera:
-      return;
+      // return;
     case ZenParser::zCWayNet:
     case ZenParser::zCWaypoint:
-      return;
+      // return;
     case ZenParser::zCCSBlock:
     case ZenParser::zCCSAtomicBlock:
     case ZenParser::oCMsgConversation:
       return;
+    case ZenParser::zReference:
+      return read_zReference(info,parser,header,version);
     case ZenParser::zCVobStair:
+      return read_zCVob_zCVobStair(info,parser,version);
     case ZenParser::zCVob:
       return read_zCVob(info,parser,version);
     case ZenParser::zCVobLevelCompo:
@@ -586,7 +845,6 @@ static void readObjectData(zCVobData &info, ZenParser &parser,
       return read_zCDecal(info,parser,version);
     case ZenParser::oCItem:
       return read_zCVob_oCItem(info,parser,version);
-
     case ZenParser::oCMOB:
       return read_zCVob_oCMOB(info,parser,version);
     case ZenParser::oCMobInter:
@@ -600,49 +858,49 @@ static void readObjectData(zCVobData &info, ZenParser &parser,
     case ZenParser::oCMobSwitch:
       return read_zCVob_oCMOB_oCMobInter_oCMobSwitch(info,parser,version);
     case ZenParser::oCMobWheel:
-      return read_zCVob_oCMOB_oCMobInter(info,parser,version); // TODO
+      return read_zCVob_oCMOB_oCMobInter_oCMobWheel(info,parser,version);
     case ZenParser::oCMobContainer:
       return read_zCVob_oCMOB_oCMobInter_oCMobContainer(info,parser,version);
     case ZenParser::oCMobDoor:
       return read_zCVob_oCMOB_oCMobInter_oCMobDoor(info,parser,version);
-
-    case ZenParser::zCPFXControler:
-      return read_zCVob_zCPFXControler(info,parser,version);
+    case ZenParser::zCPFXController:
+      return read_zCVob_zCPFXController(info,parser,version);
     case ZenParser::zCVobAnimate:
-      return read_zCVob(info,parser,version);
+      return read_zCVob_zcVobAnimate(info,parser,version);
     case ZenParser::zCVobLensFlare:
-      return read_zCVob(info,parser,version);
+      return read_zCVob_zcVobLensFlare(info,parser,version);
     case ZenParser::zCVobLight:
       return read_zCVob_zCVobLight(info,parser,version);
     case ZenParser::zCVobLightPreset:
       return read_zCVob_zCVobLightPreset(info,parser,version);
-
     case ZenParser::zCVobSpot:
       return read_zCVob_zCVobSpot(info,parser,version);
     case ZenParser::zCVobStartpoint:
       return read_zCVob_zCVobStartpoint(info,parser,version);
-
     case ZenParser::zCVobSound:
       return read_zCVob_zCVobSound(info,parser,version);
     case ZenParser::zCVobSoundDaytime:
       return read_zCVob_zCVobSound_zCVobSoundDaytime(info,parser,version);
-
     case ZenParser::oCZoneMusic:
       return read_zCVob_oCZoneMusic(info,parser,version);
     case ZenParser::oCZoneMusicDefault:
       return read_zCVob_oCZoneMusic_oCZoneMusicDefault(info,parser,version);
-
+    case ZenParser::zCZoneReverb:
+      return read_zCVob_zCVobReverb(info,parser,version);
+    case ZenParser::zCZoneReverbDefault:
+      return read_zCVob_zCVobReverb_zCVobReverbDefault(info,parser,version);
     case ZenParser::zCZoneZFog:
+      return read_zCVob_oCZoneZFog(info,parser,version);
     case ZenParser::zCZoneZFogDefault:
+      return read_zCVob_oCZoneZFog_zCZoneZFogDefault(info,parser,version);
     case ZenParser::zCZoneVobFarPlane:
+      return read_zCVob_zCZoneVobFarPlane(info,parser,version);
     case ZenParser::zCZoneVobFarPlaneDefault:
-      return read_zCVob(info,parser,version);
-
+      return read_zCVob_zCZoneVobFarPlane_zCZoneVobFarPlaneDefault(info,parser,version);
     case ZenParser::zCMessageFilter:
       return read_zCMessageFilter(info,parser,version);
     case ZenParser::zCCodeMaster:
       return read_zCCodeMaster(info,parser,version);
-
     case ZenParser::zCTrigger:
     case ZenParser::oCCSTrigger:
       return read_zCVob_zCTrigger(info,parser,version);
@@ -658,20 +916,33 @@ static void readObjectData(zCVobData &info, ZenParser &parser,
       return read_zCVob_zCTrigger_zCTriggerWorldStart(info,parser,version);
     case ZenParser::zCTriggerUntouch:
       return read_zCVob_zCTrigger_zCTriggerUntouch(info,parser,version);
-    case ZenParser::zCMoverControler:
-      return read_zCVob_zCTrigger_zCMoverControler(info,parser,version);
-
+    case ZenParser::zCMoverController:
+      return read_zCVob_zCTrigger_zCMoverController(info,parser,version);
     case ZenParser::zCCSCamera:
-      return read_zCVob(info,parser,version);
+      return read_zCVob_zCCSCamera(info,parser,version);
     case ZenParser::zCCamTrj_KeyFrame:
-      return read_zCVob(info,parser,version);
+      return read_zCVob_zCCamTrj(info,parser,header,version);
     case ZenParser::oCTouchDamage:
       return read_zCVob_oCTouchDamage(info,parser,version);
+    case ZenParser::zCTouchAnimate:
+      return read_zCVob_zCTouchAnimate(info, parser, version);
+    case ZenParser::zCTouchAnimateSound:
+      return read_zCVob_zCTouchAnimate_zCTouchAnimateSound(info, parser, version);
     case ZenParser::zCEarthquake:
-      return read_zCVob(info,parser,version);
-
+      return read_zCVob_zCEarthquake(info,parser,version);
     case ZenParser::zCVobScreenFX:
-      return read_zCVob(info,parser,version);
+      return read_zCVob_zCVobScreenFX(info,parser,version);
+    case ZenParser::zCMusicControler:
+      return read_zCVob_zCMusicControler(info,parser,version);
+    case ZenParser::ocVisualFX:
+      return read_zCVob_ocVisualFX(info,parser,version);
+    case ZenParser::ocVisFX_MultiTarget:
+      return read_ocVisFX_MultiTarget(info,parser,version);
+    case ZenParser::zCLensFlareFX:
+      return read_zCLensFlareFX(info,parser,version);
+    default:
+      LogInfo() << "skipping unsupported zCVob, classId = \"" << header.classId << "\"";
+      break;
     }
 
   LogInfo() << "skip zCVob, classId = \"" << header.classId << "\"";
@@ -681,5 +952,5 @@ void zCVob::readObjectData(zCVobData &info, ZenParser &parser,
                            const ZenParser::ChunkHeader& header, ZenParser::FileVersion version) {
   ::readObjectData(info,parser,header,version);
   if(!parser.readChunkEnd())
-    parser.skipChunk();
+    LogInfo() << " No proper read";
   }

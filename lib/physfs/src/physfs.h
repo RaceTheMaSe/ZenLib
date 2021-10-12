@@ -23,12 +23,12 @@
  * With PhysicsFS, you have a single writing directory and multiple
  *  directories (the "search path") for reading. You can think of this as a
  *  filesystem within a filesystem. If (on Windows) you were to set the
- *  writing directory to "C:\MyGame\MyWritingDirectory", then no PHYSFS calls
- *  could touch anything above this directory, including the "C:\MyGame" and
- *  "C:\" directories. This prevents an application's internal scripting
- *  language from piddling over c:\\config.sys, for example. If you'd rather
+ *  writing directory to "C:\\MyGame\\MyWritingDirectory", then no PHYSFS calls
+ *  could touch anything above this directory, including the "C:\\MyGame" and
+ *  "C:\\" directories. This prevents an application's internal scripting
+ *  language from piddling over c:\\\\config.sys, for example. If you'd rather
  *  give PHYSFS full access to the system's REAL file system, set the writing
- *  dir to "C:\", but that's generally A Bad Thing for several reasons.
+ *  dir to "C:\\", but that's generally A Bad Thing for several reasons.
  *
  * Drive letters are hidden in PhysicsFS once you set up your initial paths.
  *  The search path creates a single, hierarchical directory structure.
@@ -39,11 +39,11 @@
  *  users to a single drive, too. Use the PhysicsFS abstraction functions and
  *  allow user-defined configuration options, too. When opening a file, you
  *  specify it like it was on a Unix filesystem: if you want to write to
- *  "C:\MyGame\MyConfigFiles\game.cfg", then you might set the write dir to
- *  "C:\MyGame" and then open "MyConfigFiles/game.cfg". This gives an
+ *  "C:\\MyGame\\MyConfigFiles\\game.cfg", then you might set the write dir to
+ *  "C:\\MyGame" and then open "MyConfigFiles/game.cfg". This gives an
  *  abstraction across all platforms. Specifying a file in this way is termed
  *  "platform-independent notation" in this documentation. Specifying a
- *  a filename in a form such as "C:\mydir\myfile" or
+ *  a filename in a form such as "C:\\mydir\\myfile" or
  *  "MacOS hard drive:My Directory:My File" is termed "platform-dependent
  *  notation". The only time you use platform-dependent notation is when
  *  setting up your write directory and search path; after that, all file
@@ -493,6 +493,14 @@ typedef struct PHYSFS_Version
 PHYSFS_DECL void PHYSFS_getLinkedVersion(PHYSFS_Version *ver);
 
 
+#ifdef __ANDROID__
+typedef struct PHYSFS_AndroidInit
+{
+    void *jnienv;
+    void *context;
+} PHYSFS_AndroidInit;
+#endif
+
 /**
  * \fn int PHYSFS_init(const char *argv0)
  * \brief Initialize the PhysicsFS library.
@@ -502,11 +510,22 @@ PHYSFS_DECL void PHYSFS_getLinkedVersion(PHYSFS_Version *ver);
  * This should be called prior to any attempts to change your process's
  *  current working directory.
  *
+ * \warning On Android, argv0 should be a non-NULL pointer to a
+ *          PHYSFS_AndroidInit struct. This struct must hold a valid JNIEnv *
+ *          and a JNI jobject of a Context (either the application context or
+ *          the current Activity is fine). Both are cast to a void * so we
+ *          don't need jni.h included wherever physfs.h is. PhysicsFS
+ *          uses these objects to query some system details. PhysicsFS does
+ *          not hold a reference to the JNIEnv or Context past the call to
+ *          PHYSFS_init(). If you pass a NULL here, PHYSFS_init can still
+ *          succeed, but PHYSFS_getBaseDir() and PHYSFS_getPrefDir() will be
+ *          incorrect.
+ *
  *   \param argv0 the argv[0] string passed to your program's mainline.
  *          This may be NULL on most platforms (such as ones without a
  *          standard main() function), but you should always try to pass
- *          something in here. Unix-like systems such as Linux _need_ to
- *          pass argv[0] from main() in here.
+ *          something in here. Many Unix-like systems _need_ to pass argv[0]
+ *          from main() in here. See warning about Android, too!
  *  \return nonzero on success, zero on error. Specifics of the error can be
  *          gleaned from PHYSFS_getLastError().
  *
@@ -762,6 +781,15 @@ PHYSFS_DECL char **PHYSFS_getCdRomDirs(void);
  *
  * You should probably use the base dir in your search path.
  *
+ * \warning On most platforms, this is a directory; on Android, this gives
+ *          you the path to the app's package (APK) file. As APK files are
+ *          just .zip files, you can mount them in PhysicsFS like regular
+ *          directories. You'll probably want to call
+ *          PHYSFS_setRoot(basedir, "/assets") after mounting to make your
+ *          app's actual data available directly without all the Android
+ *          metadata and directory offset. Note that if you passed a NULL to
+ *          PHYSFS_init(), you will not get the APK file here.
+ *
  *  \return READ ONLY string of base dir in platform-dependent notation.
  *
  * \sa PHYSFS_getPrefDir
@@ -780,7 +808,7 @@ PHYSFS_DECL const char *PHYSFS_getBaseDir(void);
  * Get the "user dir". This is meant to be a suggestion of where a specific
  *  user of the system can store files. On Unix, this is her home directory.
  *  On systems with no concept of multiple home directories (MacOS, win95),
- *  this will default to something like "C:\mybasedir\users\username"
+ *  this will default to something like "C:\\mybasedir\\users\\username"
  *  where "username" will either be the login name, or "default" if the
  *  platform doesn't support multiple users, either.
  *
@@ -983,9 +1011,9 @@ PHYSFS_DECL int PHYSFS_setSaneConfig(const char *organization,
  *  write dir. All missing parent directories are also created if they
  *  don't exist.
  *
- * So if you've got the write dir set to "C:\mygame\writedir" and call
+ * So if you've got the write dir set to "C:\\mygame\\writedir" and call
  *  PHYSFS_mkdir("downloads/maps") then the directories
- *  "C:\mygame\writedir\downloads" and "C:\mygame\writedir\downloads\maps"
+ *  "C:\\mygame\\writedir\\downloads" and "C:\\mygame\\writedir\\downloads\\maps"
  *  will be created if possible. If the creation of "maps" fails after we
  *  have successfully created "downloads", then the function leaves the
  *  created directory behind and reports failure.
@@ -1011,9 +1039,9 @@ PHYSFS_DECL int PHYSFS_mkdir(const char *dirName);
  * Deleting a symlink will remove the link, not what it points to, regardless
  *  of whether you "permitSymLinks" or not.
  *
- * So if you've got the write dir set to "C:\mygame\writedir" and call
+ * So if you've got the write dir set to "C:\\mygame\\writedir" and call
  *  PHYSFS_delete("downloads/maps/level1.map") then the file
- *  "C:\mygame\writedir\downloads\maps\level1.map" is removed from the
+ *  "C:\\mygame\\writedir\\downloads\\maps\\level1.map" is removed from the
  *  physical filesystem, if it exists and the operating system permits the
  *  deletion.
  *
@@ -1043,7 +1071,7 @@ PHYSFS_DECL int PHYSFS_delete(const char *filename);
  *  is used, just like when opening a file.
  *
  * So, if you look for "maps/level1.map", and C:\\mygame is in your search
- *  path and C:\\mygame\\maps\\level1.map exists, then "C:\mygame" is returned.
+ *  path and C:\\mygame\\maps\\level1.map exists, then "C:\\mygame" is returned.
  *
  * If a any part of a match is a symbolic link, and you've not explicitly
  *  permitted symlinks, then it will be ignored, and the search for a match
@@ -1080,9 +1108,9 @@ PHYSFS_DECL const char *PHYSFS_getRealDir(const char *filename);
  *          guarantee that the enumeration ran to completion and has no gaps
  *          in its results.
  *
- * Matching directories are interpolated. That is, if "C:\mydir" is in the
+ * Matching directories are interpolated. That is, if "C:\\mydir" is in the
  *  search path and contains a directory "savegames" that contains "x.sav",
- *  "y.sav", and "z.sav", and there is also a "C:\userdir" in the search path
+ *  "y.sav", and "z.sav", and there is also a "C:\\userdir" in the search path
  *  that has a "savegames" subdirectory with "w.sav", then the following code:
  *
  * \code
@@ -2826,10 +2854,10 @@ PHYSFS_DECL const PHYSFS_Allocator *PHYSFS_getAllocator(void);
  */
 typedef enum PHYSFS_FileType
 {
-	PHYSFS_FILETYPE_REGULAR, /**< a normal file */
-	PHYSFS_FILETYPE_DIRECTORY, /**< a directory */
-	PHYSFS_FILETYPE_SYMLINK, /**< a symlink */
-	PHYSFS_FILETYPE_OTHER /**< something completely different like a device */
+  PHYSFS_FILETYPE_REGULAR, /**< a normal file */
+  PHYSFS_FILETYPE_DIRECTORY, /**< a directory */
+  PHYSFS_FILETYPE_SYMLINK, /**< a symlink */
+  PHYSFS_FILETYPE_OTHER /**< something completely different like a device */
 } PHYSFS_FileType;
 
 /**
@@ -2851,12 +2879,12 @@ typedef enum PHYSFS_FileType
  */
 typedef struct PHYSFS_Stat
 {
-	PHYSFS_sint64 filesize; /**< size in bytes, -1 for non-files and unknown */
-	PHYSFS_sint64 modtime;  /**< last modification time */
-	PHYSFS_sint64 createtime; /**< like modtime, but for file creation time */
-	PHYSFS_sint64 accesstime; /**< like modtime, but for file access time */
-	PHYSFS_FileType filetype; /**< File? Directory? Symlink? */
-	int readonly; /**< non-zero if read only, zero if writable. */
+  PHYSFS_sint64 filesize; /**< size in bytes, -1 for non-files and unknown */
+  PHYSFS_sint64 modtime;  /**< last modification time */
+  PHYSFS_sint64 createtime; /**< like modtime, but for file creation time */
+  PHYSFS_sint64 accesstime; /**< like modtime, but for file access time */
+  PHYSFS_FileType filetype; /**< File? Directory? Symlink? */
+  int readonly; /**< non-zero if read only, zero if writable. */
 } PHYSFS_Stat;
 
 /**

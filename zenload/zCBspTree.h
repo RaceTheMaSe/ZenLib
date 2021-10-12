@@ -44,28 +44,44 @@ namespace ZenLoad
          * @return List of indices to polygons, which are not LOD-Polygons. These are the
          *         actual indices of the polygons inside the mesh.
          */
-        static std::vector<size_t> getNonLodPolygons(const zCBspTreeData& d)
+        static std::vector<size_t> getNonLodPolygons(const zCBspTreeData& d,std::vector<size_t>& lodReturn)
         {
             size_t size = 0;
+            size_t lodSize = 0;
             for(size_t nidx : d.leafIndices)
             {
               const zCBspNode& n = d.nodes[nidx];
-              size += n.numPolys;
+              if(!n.lodFlag)
+                size += n.numPolys;
+              else
+                lodSize += n.numPolys;
             }
 
             std::vector<size_t> r(size);
+            std::vector<size_t> l(lodSize);
             size = 0;
+            lodSize=0;
 
             for(size_t nidx : d.leafIndices)
             {
               const zCBspNode& n      = d.nodes[nidx];
-              const uint32_t*  treeId = d.treePolyIndices.data()+n.treePolyIndex;
-              size_t*          ret    = r.data()+size;
-              for(size_t i=0; i<n.numPolys; ++i)
-                ret[i] = treeId[i];
-              size += n.numPolys;
+              if(!n.lodFlag) {
+                const uint32_t*  treeId = d.treePolyIndices.data()+n.treePolyIndex;
+                size_t*          ret    = r.data()+size;
+                for(size_t i=0; i<n.numPolys; ++i)
+                  ret[i] = treeId[i];
+                size += n.numPolys;
+                }
+              else {
+                const uint32_t*  treeId = d.treePolyIndices.data()+n.treePolyIndex;
+                size_t*          ret    = l.data()+lodSize;
+                for(size_t i=0; i<n.numPolys; ++i)
+                  ret[i] = treeId[i];
+                lodSize += n.numPolys;
+              }
             }
 
+            lodReturn=l;
             return r;
         }
 
@@ -85,7 +101,7 @@ namespace ZenLoad
         /**
          * Given a material name of "X:abcd_efgh", returns "abcd".
          */
-        static std::string extractSourceSectorFromMaterialName(std::string name)
+        static std::string extractSourceSectorFromMaterialName(const std::string& name)
         {
             std::string sectorsOnly = name.substr(name.find_first_of(':') + 1);
 
@@ -95,7 +111,7 @@ namespace ZenLoad
         /**
          * Given a material name of "X:abcd_efgh", returns "efgh".
          */
-        static std::string extractDestSectorFromMaterial(std::string name)
+        static std::string extractDestSectorFromMaterial(const std::string& name)
         {
             std::string sectorsOnly = name.substr(name.find_first_of(':') + 1);
 
@@ -117,5 +133,10 @@ namespace ZenLoad
          * @param worldMesh Loaded world mesh. Needed to access material names, which encode portal information
          */
         static void connectPortals(zCBspTreeData& info, zCMesh* worldMesh);
+
+        /**
+         * Sector names are stored without leading zeros, but queried with two digit format
+         */
+        static void modifyToTwoDigitNumbers(std::string& name);
     };
 }  // namespace ZenLoad

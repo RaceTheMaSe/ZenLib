@@ -7,13 +7,14 @@
 #include "zTypes.h"
 #include "zenParser.h"
 #include "utils/logger.h"
+#include "utils/mathlib.h"
 #include "vdfs/fileIndex.h"
 
 using namespace ZenLoad;
 
 // Types of chunks we will find in a zCModelMeshLib-Section
 
-const uint32_t MDM_VERSION = 67699974;  // TODO: Calculate this!
+//const uint32_t MDM_VERSION = 67699974;  // TODO: Calculate this!
 
 const uint16_t MLID_MODELMESH = 0xD000;
 const uint16_t MLID_MDM_SOURCE = 0xD010;
@@ -21,7 +22,7 @@ const uint16_t MLID_MDM_NODEMESHES = 0xD020;
 const uint16_t MLID_MDM_SOFSKINLIST = 0xD030;
 const uint16_t MLID_MDM_END = 0xD040;
 
-const uint32_t zMDH_VERS = 3;
+//const uint32_t zMDH_VERS = 3;
 
 const uint16_t MLID_MODELHIERARCHY = 0xD100;
 const uint16_t MLID_MDH_SOURCE = 0xD110;
@@ -58,7 +59,7 @@ void zCModelMeshLib::loadMDM(ZenParser& parser)
     // BinaryFileInfo fileInfo;
 
     // Information about a single chunk
-    BinaryChunkInfo chunkInfo;
+    BinaryChunkInfo chunkInfo{};
 
     // Read chunks until we left the virtual binary file or got to the end-chunk
     // Each chunk starts with a header (BinaryChunkInfo) which gives information
@@ -75,14 +76,19 @@ void zCModelMeshLib::loadMDM(ZenParser& parser)
         {
             case MLID_MODELMESH:
             {
-                uint32_t version = parser.readBinaryDWord();
+                mdm.version = parser.readBinaryDWord();
                 parser.setSeek(chunkEnd);  // Skip chunk
             }
             break;
 
             case MLID_MDM_SOURCE:
             {
-                // TODO: Implement MDM-Conversion
+                mdm.c[0].fromABGR8(parser.readBinaryDWord());
+                mdm.c[1].fromABGR8(parser.readBinaryDWord());
+                mdm.c[1].fromABGR8(parser.readBinaryDWord());
+                mdm.c[1].fromABGR8(parser.readBinaryDWord());
+                mdm.source = parser.readString();
+                // TODO: Implement MDM-Conversion - data is read but unused
                 parser.setSeek(chunkEnd);  // Skip chunk
             }
             break;
@@ -104,7 +110,7 @@ void zCModelMeshLib::loadMDM(ZenParser& parser)
 
             case MLID_MDM_SOFSKINLIST:
             {
-                uint32_t checksum = parser.readBinaryDWord();
+                uint32_t checksum = parser.readBinaryDWord(); (void)checksum;
                 uint16_t numSoftSkins = parser.readBinaryWord();
 
                 for (uint16_t i = 0; i < numSoftSkins; i++)
@@ -133,7 +139,7 @@ void zCModelMeshLib::loadMDH(ZenParser& parser)
     // BinaryFileInfo fileInfo;
 
     // Information about a single chunk
-    BinaryChunkInfo chunkInfo;
+    BinaryChunkInfo chunkInfo{};
 
     // Read chunks until we left the virtual binary file or got to the end-chunk
     // Each chunk starts with a header (BinaryChunkInfo) which gives information
@@ -150,9 +156,9 @@ void zCModelMeshLib::loadMDH(ZenParser& parser)
         {
             case MLID_MODELHIERARCHY:
             {
-                uint32_t version = parser.readBinaryDWord();
-                //if(version != MDM_VERSION)
-                //	LogWarn() << "MDM Version mismatch!";
+                mdh.version = parser.readBinaryDWord();
+                //if(mdh_version != MDM_VERSION)
+                //  LogWarn() << "MDM Version mismatch!";
 
                 uint16_t numNodes = parser.readBinaryWord();
                 m_Nodes.resize(numNodes);
@@ -182,8 +188,8 @@ void zCModelMeshLib::loadMDH(ZenParser& parser)
                     m_Nodes[i].transformLocal.Translation(t);
                 }
 
-                parser.readBinaryRaw(m_BBox, sizeof(m_BBox));
-                parser.readBinaryRaw(m_BBoxCollision, sizeof(m_BBoxCollision));
+                parser.readBinaryRaw((ZMath::float3*)m_BBox, sizeof(m_BBox));
+                parser.readBinaryRaw((ZMath::float3*)m_BBoxCollision, sizeof(m_BBoxCollision));
 
                 parser.readBinaryRaw(&m_RootNodeTranslation, sizeof(m_RootNodeTranslation));
 
@@ -195,7 +201,12 @@ void zCModelMeshLib::loadMDH(ZenParser& parser)
 
             case MLID_MDH_SOURCE:
             {
-                // TODO: Implement MDM-Conversion
+                mdh.c[0].fromABGR8(parser.readBinaryDWord());
+                mdh.c[1].fromABGR8(parser.readBinaryDWord());
+                mdh.c[1].fromABGR8(parser.readBinaryDWord());
+                mdh.c[1].fromABGR8(parser.readBinaryDWord());
+                mdh.source = parser.readString();
+                // TODO: Implement MDH-Conversion - data is read but unused
                 parser.setSeek(chunkEnd);  // Skip chunk
             }
             break;

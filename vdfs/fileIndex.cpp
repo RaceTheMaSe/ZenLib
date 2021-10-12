@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iomanip>
 #include <regex>
-#include <assert.h>
+#include <cassert>
 #include <physfs.h>
 #include "../lib/physfs/extras/ignorecase.h"
 #include "utils/logger.h"
@@ -22,12 +22,14 @@ namespace internal
 
 FileIndex::FileIndex()
 {
+#ifndef __ANDROID__ // init should have happened before and is not done with an internal::argv0 string object but the PHYSFS_AndroidInit struct
     if (internal::argv0.empty())
     {
         auto const error = "VDFS not intialized! Please call 'initVDFS' before using!";
         LogError() << error;
         throw std::runtime_error(error);
     }
+#endif
 
     if (!PHYSFS_isInit())
         if(!PHYSFS_init(internal::argv0.c_str()))
@@ -36,15 +38,17 @@ FileIndex::FileIndex()
           const char* errstr = (err!=0) ? PHYSFS_getErrorByCode(err) : nullptr;
 
           char error[256]={};
-          std::snprintf(error,sizeof(error),"Failed to initialize PHYSFS!(%s)",errstr);
+          std::snprintf((char*)error,sizeof(error),"Failed to initialize PHYSFS!(%s)",errstr ? errstr : "");
 
           LogError() << error;
-          throw std::runtime_error(error);
+          throw std::runtime_error((char*)error);
         }
 
     internal::numAliveIndices++;
 
+#ifndef __ANDROID__
     assert(!internal::argv0.empty());
+#endif
 }
 
 FileIndex::~FileIndex()
@@ -61,6 +65,9 @@ void FileIndex::initVDFS(const char* argv0)
     assert(internal::argv0.empty());
 
     internal::argv0 = argv0;
+#ifdef __ANDROID__
+    PHYSFS_init(argv0);
+#endif
 }
 
 bool FileIndex::loadVDF(const std::u16string &vdf, const std::string &mountPoint)
@@ -110,10 +117,10 @@ bool FileIndex::getFileData(const char* file, std::vector<uint8_t>& data) const
 {
     std::string upperedStr;
     char        upperedC[64] = {};
-    char*       uppered      = upperedC;
+    char*       uppered      = (char*)upperedC;
 
     if(std::strlen(file)<64){
-      std::strcpy(upperedC,file); // cheap upper-case
+      std::strcpy((char*)upperedC,file); // cheap upper-case
       } else {
       upperedStr = file;
       uppered    = &upperedStr[0];
@@ -122,10 +129,27 @@ bool FileIndex::getFileData(const char* file, std::vector<uint8_t>& data) const
     for(size_t i=0;uppered[i];++i) {
       auto c = uppered[i];
       if('a'<=c && c<='z')
-        uppered[i] = c+'A'-'a';
+        uppered[i] = char(c+'A'-'a');
       }
 
     PHYSFS_File* handle = PHYSFS_openRead(uppered);
+    if(handle==nullptr)
+        return false;
+
+    auto length = PHYSFS_fileLength(handle);
+    data.resize(length);
+    if (PHYSFS_readBytes(handle, data.data(), length) < length)
+    {
+        LogInfo() << "Cannot read file " << file << ": " << PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        PHYSFS_close(handle);
+        return false;
+    }
+    PHYSFS_close(handle);
+    return true;
+}
+
+bool FileIndex::getFileDataSameCase(const char* file, std::vector<uint8_t>& data) const {
+    PHYSFS_File* handle = PHYSFS_openRead(file);
     if(handle==nullptr)
         return false;
 
@@ -145,10 +169,10 @@ bool FileIndex::hasFile(const std::string& file) const
 {
     std::string upperedStr;
     char        upperedC[64] = {};
-    char*       uppered      = upperedC;
+    char*       uppered      = (char*)upperedC;
 
     if(file.size()<64){
-      std::strcpy(upperedC,file.c_str()); // cheap upper-case
+      std::strcpy((char*)upperedC,file.c_str()); // cheap upper-case
       } else {
       upperedStr = file;
       uppered    = &upperedStr[0];
@@ -157,8 +181,25 @@ bool FileIndex::hasFile(const std::string& file) const
     for(size_t i=0;uppered[i];++i) {
       auto c = uppered[i];
       if('a'<=c && c<='z')
-        uppered[i] = c+'A'-'a';
+        uppered[i] = char(c+'A'-'a');
       }
+    PHYSFS_Stat st={};
+    return PHYSFS_stat(uppered,&st)!=0;
+}
+
+bool FileIndex::hasFileCaseSensitive(const std::string& file) const
+{
+    std::string upperedStr;
+    char        upperedC[64] = {};
+    char*       uppered      = (char*)upperedC;
+
+    if(file.size()<64){
+      std::strcpy((char*)upperedC,file.c_str()); // cheap upper-case
+      } else {
+      upperedStr = file;
+      uppered    = &upperedStr[0];
+      }
+
     PHYSFS_Stat st={};
     return PHYSFS_stat(uppered,&st)!=0;
 }
@@ -178,7 +219,7 @@ int64_t VDFS::FileIndex::getLastModTime(const std::string& name)
     {
         std::string firstLine;
         std::getline(infile, firstLine);
-        struct std::tm tm;
+        struct std::tm tm{};
         std::smatch match;
 
         // Regex of the datetime used by G1 and G2 e.g. (Thu, 19 Dec 2002 19:24:42 GMT)
@@ -221,9 +262,9 @@ std::vector<std::string> FileIndex::getKnownFiles(const std::string& path) const
     }
 
     char** files = PHYSFS_enumerateFiles(filePath.c_str());
-    char** i;
-    for (i = files; *i != NULL; i++)
-        vec.push_back(*i);
+    char** i = nullptr;
+    for (i = files; *i != nullptr; i++)
+        vec.emplace_back(*i);
     PHYSFS_freeList(files);
     return vec;
 }

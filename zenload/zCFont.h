@@ -35,7 +35,11 @@ namespace ZenLoad
         };
 
         zCFont(const char* fileName, const VDFS::FileIndex& fileIndex);
-        virtual ~zCFont();
+        zCFont(zCFont&)=delete;
+        zCFont(zCFont&&)=delete;
+        virtual ~zCFont()=default;
+        zCFont& operator=(zCFont&)=delete;
+        zCFont& operator=(zCFont&&)=delete;
 
         /**
          * @return Whether this font was correctly loaded
@@ -47,7 +51,7 @@ namespace ZenLoad
          */
         const FontInfo& getFontInfo() const { return m_Info; }
 
-    protected:
+    private:
         /**
          * Parses a .FNT-File given as a binary blob
          * @param fntData .FNT-File given as a binary blob

@@ -18,7 +18,7 @@ void Daedalus::registerGothicEngineClasses(DaedalusVM& vm) {
   // so we need to register only class members of existing classes
   auto classExists = [&vm](const char* className) {
     bool exists = vm.getDATFile().hasSymbolName(className);
-    return exists && (vm.getDATFile().getSymbolByName(className).properties.elemProps.type==EParType_Class);
+    return exists && (vm.getDATFile().getSymbolByName(className).properties.elemProps.type==(uint32_t)EParType_Class);
     };
 
   if(classExists("C_Npc")) {
@@ -386,6 +386,13 @@ void Daedalus::registerGothicEngineClasses(DaedalusVM& vm) {
     REGISTER(C_MusicTheme, reverbTime);
     REGISTER(C_MusicTheme, transType);
     REGISTER(C_MusicTheme, transSubType);
+    }
+
+  if(classExists("C_MusicJingle")) {
+    REGISTER(C_MusicJingle, name);
+    REGISTER(C_MusicJingle, loop);
+    REGISTER(C_MusicJingle, vol);
+    REGISTER(C_MusicJingle, transSubType);
     }
 
   if(classExists("C_GilValues")) {

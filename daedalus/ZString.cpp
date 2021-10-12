@@ -19,8 +19,8 @@ static ZString strFromIntCache(uint8_t v){
   static ZString intCache[256];
   if(intCache[v].empty()){
     char s[32]={};
-    std::snprintf(s,sizeof(s),"%d",v);
-    intCache[v] = ZString(s);
+    std::snprintf((char*)s,sizeof(s),"%d",v);
+    intCache[v] = ZString((char*)s);
     }
   return intCache[v];
   }
@@ -86,12 +86,12 @@ ZString::ZString(ZenLoad::ZenParser &input) {
   input.readBinaryByte(); // skip 0x0A
   }
 
-ZString::ZString(ZString&& other)
-  :val(other.val){
+ZString::ZString(ZString&& other) noexcept
+  :val(std::move(other.val)){
   other.val = emptyStr();
   }
 
-ZString& ZString::operator =(ZString&& other) {
+ZString& ZString::operator =(ZString&& other) noexcept {
   std::swap(val,other.val);
   return *this;
   }
@@ -115,40 +115,61 @@ bool ZString::operator !=(const ZString &r) const {
   }
 
 bool ZString::operator <(const ZString& r) const {
+  if(val==nullptr || r.val==nullptr)
+    return false;
   return (*val<*r.val);
   }
 
 bool ZString::operator <=(const ZString& r) const {
+  if(val==nullptr || r.val==nullptr)
+    return false;
   return (*val<=*r.val);
   }
 
 bool ZString::operator >(const ZString& r) const {
+  if(val==nullptr || r.val==nullptr)
+    return false;
   return (*val>*r.val);
   }
 
 bool ZString::operator >=(const ZString& r) const {
+  if(val==nullptr || r.val==nullptr)
+    return false;
   return (*val>=*r.val);
   }
 
 bool ZString::operator <(const char* r) const {
+  if(val==nullptr || r==nullptr)
+    return false;
   return (*val<r);
   }
 
 bool ZString::operator <=(const char* r) const {
+  if(val==nullptr || r==nullptr)
+    return false;
   return (*val<=r);
   }
 
 bool ZString::operator >(const char* r) const {
+  if(val==nullptr || r==nullptr)
+    return false;
   return (*val>r);
   }
 
 bool ZString::operator >=(const char* r) const {
+  if(val==nullptr || r==nullptr)
+    return false;
   return (*val>=r);
   }
 
 ZString ZString::operator + (const ZString& r) const {
   ZString ret;
-  ret.val = std::make_shared<std::string>(*val+*r.val);
+  if(val==nullptr && r.val!=nullptr)
+    ret.val = std::make_shared<std::string>(*r.val);
+  else if(val!=nullptr && r.val==nullptr)
+    ret.val = std::make_shared<std::string>(*val);
+  else
+    ret.val = std::make_shared<std::string>(*val+*r.val);
   return ret;
   }
 
@@ -173,8 +194,8 @@ ZString ZString::toStr(int32_t v) {
     return strFromIntCache(uint8_t(v));
 
   char s[32]={};
-  std::snprintf(s,sizeof(s),"%d",v);
-  return ZString(s);
+  std::snprintf((char*)s,sizeof(s),"%d",v);
+  return ZString((char*)s);
   }
 
 ZString ZString::toStr(int64_t v) {
@@ -182,12 +203,12 @@ ZString ZString::toStr(int64_t v) {
     return strFromIntCache(uint8_t(v));
 
   char s[32]={};
-  std::snprintf(s,sizeof(s),"%lld",static_cast<long long int>(v));
-  return ZString(s);
+  std::snprintf((char*)s,sizeof(s),"%lld",static_cast<long long int>(v));
+  return ZString((char*)s);
   }
 
 ZString ZString::toStr(float v) {
   char s[32]={};
-  std::snprintf(s,sizeof(s),"%f",double(v));
-  return ZString(s);
+  std::snprintf((char*)s,sizeof(s),"%f",double(v));
+  return ZString((char*)s);
   }

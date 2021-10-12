@@ -4,8 +4,9 @@
 #include <list>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 
 #define USE_LOG
 
@@ -81,6 +82,10 @@ namespace ZenLib
             (*this) << type << ": ";
 
         }
+        Log(Log&)=delete;
+        Log(Log&&)=delete;
+        Log& operator=(Log&)=delete;
+        Log& operator=(Log&&)=delete;
 
         /** Flush the log message to wherever we need to */
         ~Log()
@@ -145,11 +150,11 @@ namespace ZenLib
         /** Sets the function to be called when a log should be printed */
         static void SetLogCallback(std::function<void(EMessageType type, const char* line)> fn)
         {
-            s_LogCallback = fn;
+            s_LogCallback = std::move(fn);
         }
 
         /** Sets the function to be called when a log should be printed */
-        static void SetLogCallback(std::function<void(const std::string&)> fn)
+        static void SetLogCallback(const std::function<void(const std::string&)>& fn)
         {
           s_LogCallback = [fn](EMessageType, const char* line) { fn(line); };
         }
@@ -172,8 +177,20 @@ namespace ZenLib
           OutputDebugStringA(line);
           OutputDebugStringA("\n");
 #elif defined(__ANDROID__)
-          (void)type;
-            __android_log_print(ANDROID_LOG_INFO, "ZenLib", line);
+          switch(type)
+          {
+              case MT_Info:
+                    __android_log_print(ANDROID_LOG_INFO, "ZenLib", "%s", line);
+                  break;
+
+              case MT_Warning:
+                    __android_log_print(ANDROID_LOG_WARN, "ZenLib", "%s", line);
+                  break;
+
+              case MT_Error:
+                    __android_log_print(ANDROID_LOG_ERROR, "ZenLib", "%s", line);
+                  break;
+          }
 #else
           switch(type)
           {
@@ -182,8 +199,8 @@ namespace ZenLib
                   break;
 
               case MT_Warning:
-                  std::cerr << line << std::endl;
-                  break;
+                //   std::cerr << line << std::endl;
+                //   break;
 
               case MT_Error:
                   std::cerr << line << std::endl;

@@ -28,6 +28,7 @@ enum EInstanceClass {
   IC_Vfx,
   IC_FXEmitKey,
   IC_MusicTheme,
+  IC_MusicJingle,
   IC_GilValues,
   IC_FightAi,
   IC_CamSys,
@@ -43,7 +44,7 @@ class InstancePtr final {
         ptr->useCount++;
       }
 
-    InstancePtr(InstancePtr&& other):cls(other.cls),ptr(other.ptr){
+    InstancePtr(InstancePtr&& other) noexcept :cls(other.cls),ptr(other.ptr){
       other.ptr = nullptr;
       }
 
@@ -73,12 +74,26 @@ class InstancePtr final {
       }
 
     InstancePtr& operator = (const InstancePtr& other) {
-      if(other.ptr)
+      if(&other==this)
+        return *this;
+      if(other.ptr){
         other.ptr->useCount++;
-      if(ptr)
+        if(other.ptr->useCount<0)
+          LogWarn() << "Instance pointer useCount negative";
+        }
+      if(ptr){
         ptr->useCount--;
+        if(ptr->useCount<0)
+          LogWarn() << "Instance pointer useCount negative";
+        }
       cls = other.cls;
       ptr = other.ptr;
+      return *this;
+      }
+
+    InstancePtr& operator = (InstancePtr&& other) noexcept {
+      std::swap(ptr,other.ptr);
+      std::swap(cls,other.cls);
       return *this;
       }
 
@@ -124,7 +139,7 @@ enum EParOp : uint8_t
   EParOp_BinAnd = 6,           // a & b
   EParOp_Less = 7,             // a < b
   EParOp_Greater = 8,          // a > b
-  EParOp_AssignInt = 9,           // a = b
+  EParOp_AssignInt = 9,        // a = b
   EParOp_LogOr = 11,           // a || b
   EParOp_LogAnd = 12,          // a && b
   EParOp_ShiftLeft = 13,       // a << b
@@ -141,25 +156,25 @@ enum EParOp : uint8_t
   EParOp_Minus = 31,           // -a
   EParOp_Not = 32,             // !a
   EParOp_Negate = 33,          // ~a
-  //	EParOp_LeftBracket     = 40,    // '('
-  //	EParOp_RightBracket    = 41,    // ')'
-  //	EParOp_Semicolon       = 42,    // ';'
-  //	EParOp_Comma           = 43,    // ','
-  //	EParOp_CurlyBracket    = 44,    // '{', '}'
-  //	EParOp_None            = 45,
-  //	EParOp_Float           = 51,
-  //	EParOp_Var             = 52,
-  //	EParOp_Operator        = 53,
+  //  EParOp_LeftBracket     = 40,    // '('
+  //  EParOp_RightBracket    = 41,    // ')'
+  //  EParOp_Semicolon       = 42,    // ';'
+  //  EParOp_Comma           = 43,    // ','
+  //  EParOp_CurlyBracket    = 44,    // '{', '}'
+  //  EParOp_None            = 45,
+  //  EParOp_Float           = 51,
+  //  EParOp_Var             = 52,
+  //  EParOp_Operator        = 53,
   EParOp_Ret = 60,
   EParOp_Call = 61,
   EParOp_CallExternal = 62,
-  //	EParOp_PopInt          = 63,
+  //  EParOp_PopInt          = 63,
   EParOp_PushInt = 64,
   EParOp_PushVar = 65,
-  //	EParOp_PushString      = 66,
+  //  EParOp_PushString      = 66,
   EParOp_PushInstance = 67,
-  //	EParOp_PushIndex       = 68,
-  //	EParOp_PopVar          = 69,
+  //  EParOp_PushIndex       = 68,
+  //  EParOp_PopVar          = 69,
   EParOp_AssignString = 70,
   EParOp_AssignStringRef = 71,
   EParOp_AssignFunc = 72,
@@ -168,16 +183,16 @@ enum EParOp : uint8_t
   EParOp_Jump = 75,
   EParOp_JumpIf = 76,
   EParOp_SetInstance = 80,
-  //	EParOp_Skip            = 90,
-  //	EParOp_Label           = 91,
-  //	EParOp_Func            = 92,
-  //	EParOp_FuncEnd         = 93,
-  //	EParOp_Class           = 94,
-  //	EParOp_ClassEnd        = 95,
-  //	EParOp_Instance        = 96,
-  //	EParOp_InstanceEnd     = 97,
-  //	EParOp_String          = 98,
-  //	EParOp_Array           = 180,  // EParOp_Var + 128
+  //  EParOp_Skip            = 90,
+  //  EParOp_Label           = 91,
+  //  EParOp_Func            = 92,
+  //  EParOp_FuncEnd         = 93,
+  //  EParOp_Class           = 94,
+  //  EParOp_ClassEnd        = 95,
+  //  EParOp_Instance        = 96,
+  //  EParOp_InstanceEnd     = 97,
+  //  EParOp_String          = 98,
+  //  EParOp_Array           = 180,  // EParOp_Var + 128
   EParOp_PushArrayVar = 245  // EParOp_PushVar + EParOp_Array
   };
 
@@ -185,12 +200,14 @@ template<class T>
 class DataContainer final {
   public:
     DataContainer() = default;
-    DataContainer(DataContainer&& oth)
+    DataContainer(DataContainer&) = delete;
+    DataContainer(DataContainer&& oth) noexcept
       : val0(oth.val0), val(std::move(oth.val)), sz(oth.sz) {
       oth.sz = 0;
       }
+    ~DataContainer() = default;
 
-    DataContainer& operator = (DataContainer&& oth) {
+    DataContainer& operator = (DataContainer&& oth) noexcept {
       val0 = oth.val0;
       std::swap(val,oth.val);
       std::swap(sz,oth.sz);
@@ -284,11 +301,11 @@ struct PARSymbol {
     };
 
   bool hasEParFlag(EParFlag eParFlag) const {
-    return static_cast<bool>(properties.elemProps.flags & eParFlag);
+    return static_cast<bool>(properties.elemProps.flags & (uint32_t)eParFlag);
     }
 
   bool isEParType(EParType eParType) const {
-    return properties.elemProps.type == eParType;
+    return properties.elemProps.type == (uint32_t)eParType;
     }
 
   Properties               properties={};
@@ -311,7 +328,7 @@ struct PARSymbol {
   uint32_t                 parent             = 0xFFFFFFFF;  // 0xFFFFFFFF (-1) = none
 
   void warnIndexOutOfBounds(size_t index, size_t size) {
-    LogWarn() << "DaedalusVM: index out of range for: " << name << "[" << size << "], index = " << index;
+    LogWarn() << (const char*) "DaedalusVM: index out of range for: " << name << "[" << size << "], index = " << index;
     }
 
   template <class T>
@@ -319,12 +336,38 @@ struct PARSymbol {
     return reinterpret_cast<T*>(reinterpret_cast<char*>(baseAddr) + classMemberOffset);
     }
 
-  int32_t&     getInt(size_t idx = 0, void* baseAddr = nullptr);
-  ZString&     getString(size_t idx = 0, void* baseAddr = nullptr);
-  float&       getFloat(size_t idx = 0, void* baseAddr = nullptr);
+  int32_t&       getInt(size_t idx = 0, void* baseAddr = nullptr);
+  ZString&       getString(size_t idx = 0, void* baseAddr = nullptr);
+  float&         getFloat(size_t idx = 0, void* baseAddr = nullptr);
+
+  const int32_t& getInt(size_t idx = 0, void* baseAddr = nullptr) const;
+  const ZString& getString(size_t idx = 0, void* baseAddr = nullptr) const;
+  const float&   getFloat(size_t idx = 0, void* baseAddr = nullptr) const;
 
   template <typename T>
   DataContainer<T>& getDataContainer();
+
+#if !defined(__GNUC__) && !defined(ANDROID) || (defined(__clang_major__))
+  template <>
+  DataContainer<int32_t>& getDataContainer() {
+    return this->intData;
+    }
+
+  template <>
+  DataContainer<float>& getDataContainer() {
+    return this->floatData;
+    }
+
+  template <>
+  DataContainer<ZString>& getDataContainer() {
+    return this->strData;
+    }
+#endif
+
+  template <class T>
+  const T& getValue(size_t idx = 0, void* baseAddr = nullptr) const {
+    return getValue<T>(idx,baseAddr);
+  }
 
   template <class T>
   T& getValue(size_t idx = 0, void* baseAddr = nullptr) {
@@ -336,6 +379,8 @@ struct PARSymbol {
         }
       else if (baseAddr == nullptr) {
         LogError() << "DaedalusVM: base address of C_Class is nullptr: " << name;
+        static T empty={};
+        return empty; // FIXME: this comes up often, so assuming that when functions get called with null objects, return zero as otherwise this messes up script logic massively - testcase: npc nek gives deadxp, because ZS_DEAD "(C_NpcIsHuman(other) && other.aivar[AIV_PARTYMEMBER])" returns some garbage value for AIV_PARTYMEMBER called with "instance other" == nullptr
         }
       else if (idx >= classMemberArraySize) {
         warnIndexOutOfBounds(idx, classMemberArraySize);
@@ -358,7 +403,7 @@ struct PARSymbol {
 
   void set(int32_t v, size_t idx = 0, void* baseAddr = nullptr)
     {
-    switch (properties.elemProps.type)
+    switch ((uint32_t)properties.elemProps.type)
       {
       case EParType_Func:
         address = uint32_t(v);
@@ -395,8 +440,8 @@ struct PARStackOpCode {
     int32_t symbol;   // EParOp_CallExternal, EParOp_PushVar, EParOp_PushInstance, EParOp_SetInstance, EParOp_PushArrayVar
     int32_t value;    // EParOp_PushInt
     };
-  uint8_t index;    // EParOp_PushArrayVar
-  size_t  opSize;  // Size of this operation
+  uint8_t index;      // EParOp_PushArrayVar
+  size_t  opSize;     // Size of this operation
   };
 
 struct PARInstance {
@@ -414,11 +459,13 @@ class DATFile {
     PARSymbol&     getSymbolByIndex    (size_t idx);
 
     size_t         getFunctionIndexByAddress(size_t address);
-    void           iterateSymbolsOfClass(const char *className, std::function<void(size_t, PARSymbol&)> callback);
+    void           iterateSymbolsOfClass(const char *className, const std::function<void(size_t, PARSymbol&)>& callback);
     const PARStackOpCode &getStackOpCode(size_t pc);
     size_t         addSymbol();
 
     const PARSymTable& getSymTable() const { return m_SymTable; }
+
+    void           printToLog();
 
     template<class T,class M>
     void registerMember(const char* name,T M::* field, bool checkIfExists){

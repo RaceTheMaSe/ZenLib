@@ -18,6 +18,15 @@ DATFile::DATFile(const uint8_t* pData, size_t numBytes){
   uint8_t version = input.readBinaryByte();
   (void)version;
   readSymTable(input);
+  //printToLog();
+  }
+
+void DATFile::printToLog() {
+  for(size_t i=0;i<getSymTable().symbols.size();++i){
+    auto& s = getSymbolByIndex(i);
+    if(s.isEParType(EParType::EParType_Instance))
+      LogInfo() << s.name;
+    }
   }
 
 void DATFile::readSymTable(ZenLoad::ZenParser& input) {
@@ -36,15 +45,15 @@ void DATFile::readSymTable(ZenLoad::ZenParser& input) {
       uint8_t b = input.readBinaryByte();
       while(b != 0x0A) {
         if(b != 0xFF)  // FIXME: This happens at INSTANCE_HELP?
-          s.name += b;
+          s.name += (char)b;
         b = input.readBinaryByte();
         }
       }
 
     input.readBinaryRaw(&s.properties, sizeof(s.properties));
 
-    if(0 == (s.properties.elemProps.flags & EParFlag_ClassVar)) {
-      switch(s.properties.elemProps.type) {
+    if(0 == (s.properties.elemProps.flags & (uint32_t)EParFlag_ClassVar)) {
+      switch((uint32_t)s.properties.elemProps.type) {
         case EParType_Float:
           s.floatData.resize(s.properties.elemProps.count);
           input.readBinaryRaw(s.floatData.data(), sizeof(float) * s.floatData.size());
@@ -69,8 +78,8 @@ void DATFile::readSymTable(ZenLoad::ZenParser& input) {
         case EParType_Prototype:
         case EParType_Instance:
           s.address = static_cast<int32_t>(input.readBinaryDWord());
-          if (s.properties.elemProps.flags & EParFlag_External)
-            ;
+          if (s.properties.elemProps.flags & (uint32_t)EParFlag_External)
+            {;}
           break;
         }
       }
@@ -125,9 +134,9 @@ void DATFile::readStack(ZenLoad::ZenParser& input) {
         break;
 
       case EParOp_PushVar:
-        s.symbol = int32_t(input.readBinaryDWord());
-        s.opSize += sizeof(int32_t);
-        break;
+        // s.symbol = int32_t(input.readBinaryDWord());
+        // s.opSize += sizeof(int32_t);
+        // break;
 
       case EParOp_PushInstance:
         s.symbol = int32_t(input.readBinaryDWord());
@@ -135,9 +144,9 @@ void DATFile::readStack(ZenLoad::ZenParser& input) {
         break;
 
       case EParOp_Jump:
-        s.address = int32_t(input.readBinaryDWord());
-        s.opSize += sizeof(int32_t);
-        break;
+        // s.address = int32_t(input.readBinaryDWord());
+        // s.opSize += sizeof(int32_t);
+        // break;
 
       case EParOp_JumpIf:
         s.address = int32_t(input.readBinaryDWord());
@@ -308,24 +317,24 @@ size_t DATFile::addSymbol() {
   return m_SymTable.symbols.size() - 1;
   }
 
-void DATFile::iterateSymbolsOfClass(const char* className, std::function<void(size_t, PARSymbol&)> callback) {
+void DATFile::iterateSymbolsOfClass(const char* className, const std::function<void(size_t, PARSymbol&)>& callback) {
   constexpr auto none = uint32_t{0xFFFFFFFF};
   // First, find the parent-symbol
   size_t baseSym = getSymbolIndexByName(className);
 
   for(size_t i=0; i<m_SymTable.symbols.size(); i++) {
     PARSymbol& s = getSymbolByIndex(i);
-    if(s.parent==none || s.properties.elemProps.type!=EParType_Instance)
+    if(s.parent==none || s.properties.elemProps.type!=(uint32_t)EParType_Instance)
       continue;
 
-    if((s.properties.elemProps.flags & Daedalus::EParFlag::EParFlag_Const)==0)
+    if((s.properties.elemProps.flags & (uint32_t)Daedalus::EParFlag::EParFlag_Const)==0)
       continue;  // filters out variables of type C_NPC or C_ITEM
 
     PARSymbol& p = getSymbolByIndex(s.parent);
     uint32_t pBase = s.parent;
 
     // In case this is also just a prototype, go deeper one more level
-    if(p.properties.elemProps.type==EParType_Prototype && p.parent!=none) {
+    if(p.properties.elemProps.type==(uint32_t)EParType_Prototype && p.parent!=none) {
       pBase = p.parent;
       }
 
@@ -335,9 +344,31 @@ void DATFile::iterateSymbolsOfClass(const char* className, std::function<void(si
     }
   }
 
-namespace Daedalus
-{
-// getDataContainer specializations
+int32_t& PARSymbol::getInt(size_t idx, void* baseAddr) {
+  return getValue<int32_t>(idx, baseAddr);
+  }
+
+ZString& PARSymbol::getString(size_t idx, void* baseAddr) {
+  return getValue<ZString>(idx, baseAddr);
+  }
+
+float& PARSymbol::getFloat(size_t idx, void* baseAddr) {
+  return getValue<float>(idx, baseAddr);
+  }
+
+const int32_t& PARSymbol::getInt(size_t idx, void* baseAddr) const {
+  return getValue<int32_t>(idx, baseAddr);
+  }
+
+const ZString& PARSymbol::getString(size_t idx, void* baseAddr) const {
+  return getValue<ZString>(idx, baseAddr);
+  }
+
+const float& PARSymbol::getFloat(size_t idx, void* baseAddr) const {
+  return getValue<float>(idx, baseAddr);
+  }
+
+#if (defined(__GNUC__) && !defined(ANDROID) && !defined(__clang__)) // FIXME: crude way of getting it to compile with ndk clang 9 for android where __GNUC__ is also defined, gcc 9/10 and clang 10+ for desktop
 template <>
 DataContainer<int32_t>& PARSymbol::getDataContainer() {
   return this->intData;
@@ -352,16 +383,4 @@ template <>
 DataContainer<ZString>& PARSymbol::getDataContainer() {
   return this->strData;
   }
-}  // namespace Daedalus
-
-int32_t& PARSymbol::getInt(size_t idx, void* baseAddr) {
-  return getValue<int32_t>(idx, baseAddr);
-  }
-
-ZString& PARSymbol::getString(size_t idx, void* baseAddr) {
-  return getValue<ZString>(idx, baseAddr);
-  }
-
-float& PARSymbol::getFloat(size_t idx, void* baseAddr) {
-  return getValue<float>(idx, baseAddr);
-  }
+#endif

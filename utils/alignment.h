@@ -1,27 +1,25 @@
 #pragma once
-#include <inttypes.h>
-#include <string.h>
+#include <cinttypes>
+#include <cstring>
 
-#if EMSCRIPTEN
-#include <emscripten.h>
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#elif __CLANG__
+#pragma Clang diagnostic push
+#pragma Clang diagnostic ignored "-Wcast-qual"
 #endif
 
 namespace Utils
 {
-#if EMSCRIPTEN
-    typedef emscripten_align1_int unaligned_int32;
-    typedef emscripten_align1_short unaligned_int16;
-    typedef emscripten_align1_float unaligned_float;
-#else
-    typedef int32_t unaligned_int32;
-    typedef int16_t unaligned_int16;
-    typedef float unaligned_float;
-#endif
+    using unaligned_int32 = int32_t;
+    using unaligned_int16 = int16_t;
+    using unaligned_float = float;
     /**
-	 * @brief performs an unaligned memory-access
-	 */
+   * @brief performs an unaligned memory-access
+   */
     template <typename T>
-    static void getUnaligned(T* dst, const void* src)
+    void getUnaligned(T* dst, const void* src)
     {
         memcpy(dst, src, sizeof(T));
     }
@@ -34,3 +32,9 @@ namespace Utils
         ptr += sizeof(T);
     }
 }  // namespace Utils
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#elif __CLANG__
+#pragma Clang diagnostic pop
+#endif

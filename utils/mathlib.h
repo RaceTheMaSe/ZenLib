@@ -1,12 +1,14 @@
 #pragma once
 #include <iostream>
 #include <string>
-#include <string.h>
+#include <cstring>
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic ignored "-Wpedantic" // silence warning about ISO C++ prohibits anonymous structs
+#endif
 
 namespace ZMath
 {
-    static const float Pi = 3.14159265359f;
-
     constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1)
     {
         return exp < 1 ? result : ipow(base * base, exp / 2, (exp % 2) ? result * base : result);
@@ -14,11 +16,11 @@ namespace ZMath
 
     struct t_float2
     {
-        t_float2() {}
-        t_float2(float x, float y)
+        t_float2() = default;
+        t_float2(float xIn, float yIn)
         {
-            this->x = x;
-            this->y = y;
+            this->x = xIn;
+            this->y = yIn;
         }
 
         union {
@@ -28,7 +30,7 @@ namespace ZMath
                 float y;
             };
 
-            float v[2];
+            float v[2]={};
         };
 
         std::string toString() const
@@ -46,12 +48,12 @@ namespace ZMath
 
     struct t_float3
     {
-        t_float3() {}
-        t_float3(float x, float y, float z)
+        t_float3() = default;
+        t_float3(float xIn, float yIn, float zIn)
         {
-            this->x = x;
-            this->y = y;
-            this->z = z;
+            this->x = xIn;
+            this->y = yIn;
+            this->z = zIn;
         }
 
         union {
@@ -62,7 +64,7 @@ namespace ZMath
                 float z;
             };
 
-            float v[3];
+            float v[3]={};
         };
 
         std::string toString() const
@@ -80,13 +82,13 @@ namespace ZMath
 
     struct t_float4
     {
-        t_float4() {}
-        t_float4(float x, float y, float z, float w)
+        t_float4() = default;
+        t_float4(float xIn, float yIn, float zIn, float wIn)
         {
-            this->x = x;
-            this->y = y;
-            this->z = z;
-            this->w = w;
+            this->x = xIn;
+            this->y = yIn;
+            this->z = zIn;
+            this->w = wIn;
         }
 
         union {
@@ -98,34 +100,34 @@ namespace ZMath
                 float w;
             };
 
-            float v[4];
+            float v[4]={};
         };
 
         /**
-		 * @brief Converts the given ABGR8-Color to float4
-		 */
+     * @brief Converts the given ABGR8-Color to float4
+     */
         void fromABGR8(uint32_t argb)
         {
-            uint8_t a = uint8_t(argb >> 24);
-            uint8_t b = uint8_t(argb >> 16);
-            uint8_t g = uint8_t(argb >>  8);
-            uint8_t r = uint8_t(argb      );
+            auto a = uint8_t(argb >> 24);
+            auto b = uint8_t(argb >> 16);
+            auto g = uint8_t(argb >>  8);
+            auto r = uint8_t(argb      );
 
-            x = r / 255.0f;
-            y = g / 255.0f;
-            z = b / 255.0f;
-            w = a / 255.0f;
+            x = (float)r / 255.0f;
+            y = (float)g / 255.0f;
+            z = (float)b / 255.0f;
+            w = (float)a / 255.0f;
         }
 
         /**
-		* @brief Converts the stored color to ARGB8
-		*/
+    * @brief Converts the stored color to ARGB8
+    */
         uint32_t toABGR8()
         {
-            uint32_t a = uint32_t(w*255.f);
-            uint32_t b = uint32_t(z*255.f);
-            uint32_t g = uint32_t(y*255.f);
-            uint32_t r = uint32_t(x*255.f);
+            auto a = uint32_t(w*255.f);
+            auto b = uint32_t(z*255.f);
+            auto g = uint32_t(y*255.f);
+            auto r = uint32_t(x*255.f);
             return (a << 24) | (b << 16) | (g << 8) | r;
         }
 
@@ -145,16 +147,16 @@ namespace ZMath
     template <typename T, typename... S>
     struct t_vector : public T
     {
-        t_vector(S... x)
-            : T(x...)
+        t_vector(S... a)
+            : T(a...)
         {
         }
         t_vector() = default;
 
         // Comparision operators
-        bool operator==(const t_vector<T, S...>& v) const
+        bool operator==(const t_vector<T, S...>& w) const
         {
-            return memcmp(T::v, v.v, sizeof(v.v)) == 0;
+            return memcmp(T::v, w.v, sizeof(w.v)) == 0;
         }
 
         bool operator!=(const t_vector<T, S...>& v) const
@@ -181,9 +183,9 @@ namespace ZMath
         }
     };
 
-    typedef t_vector<t_float2, float, float> float2;
-    typedef t_vector<t_float3, float, float, float> float3;
-    typedef t_vector<t_float4, float, float, float, float> float4;
+    using float2 = t_vector<t_float2, float, float>;
+    using float3 = t_vector<t_float3, float, float, float>;
+    using float4 = t_vector<t_float4, float, float, float, float>;
 
     //------------------------------------------------------------------------------
     // 4x4 Matrix (assumes right-handed cooordinates)
@@ -193,7 +195,7 @@ namespace ZMath
 
         Matrix(float* pm)
         {
-            memcpy(m, pm, sizeof(m));
+            memcpy((void*)m, pm, sizeof(m));
         }
 
         Matrix(float m00, float m01, float m02, float m03,
@@ -245,69 +247,69 @@ namespace ZMath
         }
 
         // Properties
-        float3 Up() const { return float3(_21, _22, _23); }
-        void Up(const float3& v)
+        float3 Up() const { return {_21, _22, _23}; }
+        void Up(const float3& vIn)
         {
-            _21 = v.x;
-            _22 = v.y;
-            _23 = v.z;
+            _21 = vIn.x;
+            _22 = vIn.y;
+            _23 = vIn.z;
         }
 
-        float3 Down() const { return float3(-_21, -_22, -_23); }
-        void Down(const float3& v)
+        float3 Down() const { return {-_21, -_22, -_23}; }
+        void Down(const float3& vIn)
         {
-            _21 = -v.x;
-            _22 = -v.y;
-            _23 = -v.z;
+            _21 = -vIn.x;
+            _22 = -vIn.y;
+            _23 = -vIn.z;
         }
 
-        float3 Right() const { return float3(_11, _12, _13); }
-        void Right(const float3& v)
+        float3 Right() const { return {_11, _12, _13}; }
+        void Right(const float3& vIn)
         {
-            _11 = v.x;
-            _12 = v.y;
-            _13 = v.z;
+            _11 = vIn.x;
+            _12 = vIn.y;
+            _13 = vIn.z;
         }
 
-        float3 Left() const { return float3(-_11, -_12, -_13); }
-        void Left(const float3& v)
+        float3 Left() const { return {-_11, -_12, -_13}; }
+        void Left(const float3& vIn)
         {
-            _11 = -v.x;
-            _12 = -v.y;
-            _13 = -v.z;
+            _11 = -vIn.x;
+            _12 = -vIn.y;
+            _13 = -vIn.z;
         }
 
-        float3 Forward() const { return float3(-_31, -_32, -_33); }
-        void Forward(const float3& v)
+        float3 Forward() const { return {-_31, -_32, -_33}; }
+        void Forward(const float3& vIn)
         {
-            _31 = -v.x;
-            _32 = -v.y;
-            _33 = -v.z;
+            _31 = -vIn.x;
+            _32 = -vIn.y;
+            _33 = -vIn.z;
         }
 
-        float3 Backward() const { return float3(_31, _32, _33); }
-        void Backward(const float3& v)
+        float3 Backward() const { return {_31, _32, _33}; }
+        void Backward(const float3& vIn)
         {
-            _31 = v.x;
-            _32 = v.y;
-            _33 = v.z;
+            _31 = vIn.x;
+            _32 = vIn.y;
+            _33 = vIn.z;
         }
 
-        float3 Translation() const { return float3(_41, _42, _43); }
-        float3 TranslationT() const { return float3(_14, _24, _34); }
-        void Translation(const float3& v)
+        float3 Translation() const { return {_41, _42, _43}; }
+        float3 TranslationT() const { return {_14, _24, _34}; }
+        void Translation(const float3& vIn)
         {
-            _41 = v.x;
-            _42 = v.y;
-            _43 = v.z;
+            _41 = vIn.x;
+            _42 = vIn.y;
+            _43 = vIn.z;
         }
 
         static Matrix CreateIdentity()
         {
-            return Matrix(1, 0, 0, 0,
-                          0, 1, 0, 0,
-                          0, 0, 1, 0,
-                          0, 0, 0, 1);
+            return {1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1};
         }
 
         union {

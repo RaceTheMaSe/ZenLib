@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.4...2.9)
 project(ZenLib)
 
 include(ExternalProject)
@@ -7,12 +7,14 @@ include(cmake/clang-format.cmake)
 set(ZENLIB_BUILD_EXAMPLES OFF CACHE BOOL "Whether to build the examples")
 set(ZENLIB_BUILD_TESTS OFF CACHE BOOL "Whether to build tests")
 set(PHYSFS_BUILD_SHARED OFF)
+cmake_policy(SET CMP0077 NEW)
 
 set(CMAKE_CXX_STANDARD 14)
 
 # Mute annoying MSVC-Warnings
 if(MSVC)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHsc")
 	add_definitions(-DNOMINMAX)
 endif()
 

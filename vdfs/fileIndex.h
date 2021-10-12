@@ -11,7 +11,11 @@ namespace VDFS
     {
     public:
         FileIndex();
+        FileIndex(FileIndex&)=delete;
+        FileIndex(FileIndex&&)=delete;
         ~FileIndex();
+        FileIndex& operator=(FileIndex&)=delete;
+        FileIndex& operator=(FileIndex&&)=delete;
 
         /**
          * @brief Initializes the VDFS
@@ -47,6 +51,11 @@ namespace VDFS
         bool getFileData(const char* file, std::vector<uint8_t>& data) const;
 
         /**
+         * @brief Fills a vector with the data of the given file
+         */
+        bool getFileDataSameCase(const char* file, std::vector<uint8_t>& data) const;
+
+        /**
          * @brief Returnst the list of all known files
          */
         std::vector<std::string> getKnownFiles(const std::string& path = "/") const;
@@ -55,6 +64,11 @@ namespace VDFS
          * @return Whether a file with the given name exists
          */
         bool hasFile(const std::string& name) const;
+        
+        /**
+         * @return Whether a file with the given name exists, ignoring case-sensitivity
+         */
+        bool hasFileCaseSensitive(const std::string& name) const;
 
         /**
          * Get the last modification time of the given VDF-File.

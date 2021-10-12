@@ -8,8 +8,8 @@ namespace ZenLoad
 class zCVob {
   struct packedVobData;
   enum {
-    VERSION_G1_08k = 12289,
-    VERSION_G26fix = 0  // TODO
+    VERSION_G1_08k = 0x00003001,
+    VERSION_G26fix = 0x40900000  // TODO
     };
 
   public:

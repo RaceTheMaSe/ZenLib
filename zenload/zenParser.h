@@ -9,6 +9,7 @@
 #include "zTypes.h"
 #include "utils/mathlib.h"
 #include "utils/split.h"
+#include "zCMesh.h"
 
 namespace VDFS
 {
@@ -42,7 +43,7 @@ public:
   enum class FileVersion
     {
     Gothic1,
-    Gothic2,
+    Gothic2
     };
 
   enum ZenClass
@@ -54,9 +55,8 @@ public:
     zCCSAtomicBlock,
     oCCSTrigger,
     zCAICamera,
-    zCMoverControler,
+    zCMoverController,
     zCVobScreenFX,
-    oCMsgConversation,
     zCDecal,
     zCProgMeshProto,
     zCParticleFX,
@@ -80,7 +80,7 @@ public:
     oCMobWheel,
     oCMobContainer,
     oCMobDoor,
-    zCPFXControler,
+    zCPFXController,
     zCVobAnimate,
     zCVobLensFlare,
     zCVobLight,
@@ -91,6 +91,8 @@ public:
     zCVobSoundDaytime,
     oCZoneMusic,
     oCZoneMusicDefault,
+    zCZoneReverb,
+    zCZoneReverbDefault,
     zCZoneZFog,
     zCZoneZFogDefault,
     zCZoneVobFarPlane,
@@ -107,6 +109,39 @@ public:
     oCTouchDamage,
     zCTriggerUntouch,
     zCEarthquake,
+    zCTouchAnimate,
+    zCTouchAnimateSound,
+    zCMusicControler,
+    ocVisualFX,
+    ocVisFX_MultiTarget,
+    zCLensFlareFX,
+    zCLensFlare,
+    zCEventManager,
+    zCCutscene,
+    zCCSSyncBlock,
+    zCCSRole,
+    oCCSProps,
+    oCNpcMessage,
+    zCEventMessage,
+    zCEventScreenFX,
+    oCMsgAttack,
+    oCMsgConversation,
+    ocMsgCutscene,
+    oCMsgDamage,
+    oCMsgMagic,
+    oCMsgManipulate,
+    oCMsgMovement,
+    oCMsgState,
+    oCMsgUseItem,
+    oCMsgWeapon,
+    ocMobMsg,
+    zCEventCommon,
+    zCEventCore,
+    zCEventMover,
+    zCEventMusicControler,
+    zCEvMsgCutscene,
+    zCCSCamera_EventMsg,
+    zCCSCamera_EventMsgActivate,
     };
 
   /**
@@ -150,7 +185,11 @@ public:
     */
   ZenParser(const uint8_t* data, size_t size);
   ZenParser() = default;
-  ~ZenParser();
+  ZenParser(ZenParser&) = delete;
+  ZenParser(ZenParser&&) = delete;
+  ~ZenParser()=default;
+  ZenParser& operator=(ZenParser&) = delete;
+  ZenParser& operator=(ZenParser&&) = delete;
 
   /**
    * @brief Reads the main ZEN-Header
@@ -162,7 +201,9 @@ public:
    */
   void readWorld(oCWorldData& info, FileVersion version);
 
-  void readPresets(std::vector<zCVobData>& vobs, FileVersion version);
+  void readLightPresets(std::vector<zCVobData>& vobs, FileVersion version);
+  void readLensFlares  (std::vector<zCVobData>& vobs, FileVersion version);
+  void readCameras     (std::vector<zCVobData>& vobs, FileVersion version);
 
   /**
    * @brief Returns the file-header
@@ -202,7 +243,7 @@ public:
   char     peekChar() const;
 
   /**
-     * @brief Reads a line to \r or \n
+     * @brief Reads a line to \\r or \\n
      */
   std::string readLine(bool skipSpaces = true);
   bool        readLine(char* buf, size_t size, bool skipSpaces = true);
@@ -210,7 +251,7 @@ public:
   /**
      * @brief skips a string and checks if it matches the given expected one
      */
-  bool skipString(const std::string& pattern = std::string());
+  bool skipString(const std::string& pattern = "");
 
   /**
      * @brief Skips all whitespace-characters until it hits a non-whitespace one
@@ -223,7 +264,7 @@ public:
   void skipNewLines();
 
   /**
-     * @brief Reads a string until \r, \n or a space is found
+     * @brief Reads a string until \\r, \\n or a space is found
      */
   std::string readString(bool skipSpaces = true);
 
@@ -263,7 +304,7 @@ public:
      * @brief Returns the data-array
      */
   const uint8_t* getDataPtr()     const { return m_Data+m_Seek; }
-  size_t         getRamainBytes() const { return m_DataSize-m_Seek; }
+  size_t         getRemainBytes() const { return m_DataSize-m_Seek; }
 
   /**
     * @brief Reads one structure of type T. Watch for alignment!
@@ -281,13 +322,13 @@ public:
 
   /**
      * @brief Reads a chunk-header. Returns true if there actually was a start.
-     *		  Otherwise it will leave m_Seek untouched and return false.
+     *      Otherwise it will leave m_Seek untouched and return false.
      */
   bool readChunkStart(ChunkHeader& header);
 
   /**
      * @brief Reads the end of a chunk. Returns true if there actually was an end.
-     *		  Otherwise it will leave m_Seek untouched and return false.
+     *      Otherwise it will leave m_Seek untouched and return false.
      */
   bool readChunkEnd();
 
@@ -318,7 +359,7 @@ private:
   /**
    * @brief Implementation this archive usese
    */
-  ParserImpl* m_pParserImpl;
+  ParserImpl* m_pParserImpl{};
 
   /**
    * @brief Data currently loaded and the current stream position

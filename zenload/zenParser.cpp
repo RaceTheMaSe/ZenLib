@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <memory>
 
 #include "parserImplASCII.h"
 #include "parserImplBinSafe.h"
@@ -12,6 +13,8 @@
 #include "zCBspTree.h"
 #include "zCMesh.h"
 #include "utils/logger.h"
+#include <cmath>
+#include "zenload/zTypes.h"
 #include <vdfs/fileIndex.h>
 
 using namespace ZenLoad;
@@ -36,13 +39,7 @@ ZenParser::ZenParser(const std::string& file, const VDFS::FileIndex& vdfs) {
 /**
  * @brief reads a zen from memory
  */
-ZenParser::ZenParser(const uint8_t* data, size_t size) {
-  m_Data     = data;
-  m_DataSize = size;
-  }
-
-ZenParser::~ZenParser() {
-  }
+ZenParser::ZenParser(const uint8_t* data, size_t size) : m_Data(data), m_DataSize(size) { }
 
 /**
 * @brief returns whether the given string is a number
@@ -83,10 +80,11 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
     THROW("Not a valid header");
 
   // Version should be always 1...
-  header.version = readIntASCII();
+  header.version = atoi(readLine(true).c_str()); // changed from readIntASCII(); to have proper advancing in ascii zen
 
   // Skip archiver type
-  skipString();
+  if(header.version!=0) // lensflare.zen has version==0 and no archiver type
+    skipString();
 
   // Read file-type, to create the right archiver implementation
   std::string fileType = readLine();
@@ -106,12 +104,14 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   if(skipString("user"))
     header.user = readLine();
 
-  // Reached the end of the main header
-  if(!skipString("END"))
-    THROW("No END in header(1)");
+  if(header.version!=0) { // version 0 continues with object count,
+    // Reached the end of the main header
+    if(!skipString("END"))
+      THROW("No END in header(1)");
 
-  // Continue with the implementationspecific header
-  skipSpaces();
+    // Continue with the implementationspecific header
+    skipSpaces();
+    }
 
   if(fileType == "ASCII") {
     header.fileType = FT_ASCII;
@@ -135,7 +135,7 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
 void ZenParser::readWorldMesh(oCWorldData& info)
 {
     LogInfo() << "ZEN: Reading mesh...";
-    m_pWorldMesh.reset(new ZenLoad::zCMesh());
+    m_pWorldMesh = std::make_unique<ZenLoad::zCMesh>();
     info.bspTree = zCBspTree::readObjectData(*this, m_pWorldMesh.get());
     LogInfo() << "ZEN: Done reading mesh!";
 }
@@ -150,7 +150,7 @@ bool ZenParser::readChunkStart(ChunkHeader& header)
 
 /**
  * @brief Reads the end of a chunk. Returns true if there actually was an end. 
- *		  Otherwise it will leave m_Seek untouched and return false.
+ *      Otherwise it will leave m_Seek untouched and return false.
  */
 bool ZenParser::readChunkEnd()
 {
@@ -188,8 +188,8 @@ void ZenParser::skipChunk()
 */
 void ZenParser::skipEntry()
 {
-    ParserImpl::EZenValueType type;
-    size_t size;
+    ParserImpl::EZenValueType type = ParserImpl::EZenValueType::ZVT_0;
+    size_t size = 0;
 
     // Read type and size first, so we can allocate the data
     m_pParserImpl->readEntryType(type, size);
@@ -240,7 +240,7 @@ std::string ZenParser::readString(bool skip)
     const char* begin = reinterpret_cast<const char*>(m_Data+m_Seek);
     size_t      size  = 0;
     while(m_Seek<m_DataSize) {
-      if(m_Data[m_Seek]=='\n' || m_Data[m_Seek]=='\r' || m_Data[m_Seek]==' ' || m_Data[m_Seek]=='\0') {
+      if(m_Data[m_Seek]=='\n' || m_Data[m_Seek]=='\r' || m_Data[m_Seek]=='\t' || m_Data[m_Seek]==' ' || m_Data[m_Seek]=='\0') {
         ++m_Seek;
         break;
         }
@@ -271,7 +271,7 @@ bool ZenParser::skipString(const std::string& pattern)
         size_t lineSeek = 0;
         while (lineSeek < pattern.size())
         {
-            if(m_Seek>=m_DataSize || m_Data[m_Seek]!=pattern[lineSeek])
+            if(m_Seek>=m_DataSize || m_Data[m_Seek]!=(uint8_t)pattern[lineSeek])
             {
                 retVal = false;
                 break;
@@ -322,7 +322,7 @@ void ZenParser::skipNewLines()
 */
 uint32_t ZenParser::readBinaryDWord()
 {
-    uint32_t retVal;
+    uint32_t retVal = 0;
     readStructure(retVal);
 
     return retVal;
@@ -330,7 +330,7 @@ uint32_t ZenParser::readBinaryDWord()
 
 uint16_t ZenParser::readBinaryWord()
 {
-    uint16_t retVal;
+    uint16_t retVal = 0;
     readStructure(retVal);
 
     return retVal;
@@ -345,7 +345,7 @@ uint8_t ZenParser::readBinaryByte()
 
 float ZenParser::readBinaryFloat()
 {
-    float retVal;
+    float retVal = {};
     readStructure(retVal);
 
     return retVal;
@@ -378,7 +378,7 @@ std::string ZenParser::readLine(bool skip)
 {
     const char* at = reinterpret_cast<const char*>(m_Data+m_Seek);
     size_t      sz = 0;
-    while(m_Seek<m_DataSize && m_Data[m_Seek]!='\r' && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!='\0') {
+    while(m_Seek<m_DataSize && m_Data[m_Seek]!='\r' && m_Data[m_Seek]!='\t' && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!='\0') {
       sz++;
       m_Seek++;
       }
@@ -399,7 +399,7 @@ bool ZenParser::readLine(char* buf, size_t size, bool skip)
 
   const char* at = reinterpret_cast<const char*>(m_Data+m_Seek);
   size_t      sz = 0;
-  while(m_Seek<m_DataSize && m_Data[m_Seek]!='\r' && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!='\0') {
+  while(m_Seek<m_DataSize && m_Data[m_Seek]!='\r' && m_Data[m_Seek]!='\t' && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!='\0') {
     sz++;
     m_Seek++;
     }
@@ -427,9 +427,11 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
   ChunkHeader worldHeader;
   readChunkStart(worldHeader);
 
+  bool readSuccess=false;
   if(worldHeader.classId!=ZenParser::zCWorld)
     THROW("Expected oCWorld:zCWorld-Chunk not found!");
 
+  bool isUncompressZen=true;
   while(!readChunkEnd()) {
     ZenParser::ChunkHeader header;
     readChunkStart(header);
@@ -439,6 +441,7 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
     if(header.name == "MeshAndBsp") {
       readWorldMesh(info);
       readChunkEnd();
+      isUncompressZen=false;
       }
     else if(header.name == "VobTree") {
       // Read how many vobs this one has as child
@@ -452,20 +455,29 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
       for(uint32_t i=0; i<numChildren; i++) {
         info.numVobsTotal += readVobTree(info.rootVobs[i],version);
         }
-
       readChunkEnd();
       }
     else if (header.name == "WayNet") {
       readWayNetData(info.waynet);
+      readChunkEnd();
+      }
+    else if (header.name == "EndMarker") {
+      LogInfo() << "ZEN: Done reading world";
+      readSuccess=true;
       }
     else {
+      LogInfo() << "ZEN: No clean read of zen file - there could be loading errors. Last chunk: " << header.name << " - classId: " << header.classId;
       skipChunk();
       }
     }
+  if(!readSuccess)
+    LogInfo() << "ZEN: No clean read of zen file - there could be following issues originating from this!!!";
+  if(isUncompressZen && info.rootVobs.size()>1) // NOTE: only emit this message for more than one rootVob, assuming those are level zen's and size==1 are VobBundles
+    LogInfo() << "ZEN: No world mesh given - probably an uncompressed zen file. Please provide a compressed zen, either ASCII or BinSafe format. Ignore this message if its a VobBundle zen";
   }
 
-void ZenParser::readPresets(std::vector<zCVobData>& vobs, ZenParser::FileVersion version) {
-  LogInfo() << "ZEN: Reading presets...";
+void ZenParser::readLightPresets(std::vector<zCVobData>& vobs, ZenParser::FileVersion version) {
+  LogInfo() << "ZEN: Reading light presets...";
 
   int numVobLightPresets = 0;
   getImpl()->readEntry("numVobLightPresets",numVobLightPresets);
@@ -488,10 +500,40 @@ void ZenParser::readPresets(std::vector<zCVobData>& vobs, ZenParser::FileVersion
     }
   }
 
+void ZenParser::readLensFlares(std::vector<ZenLoad::zCVobData>& vobs, ZenParser::FileVersion version) {
+  LogInfo() << "ZEN: Reading lensflare presets...";
+
+  ChunkHeader header;
+  if(!readChunkStart(header) || header.name!="LensFlareFXList")
+    return;
+  
+  while(readChunkStart(header)) {
+    zCVobData preset;
+    preset.vobType = zCVobData::VT_zCLensFlareFX;
+    zCVob::readObjectData(preset, *this, header, version);
+    vobs.emplace_back(preset);
+    }
+  readChunkEnd();
+  }
+
+void ZenParser::readCameras(std::vector<ZenLoad::zCVobData>& vobs, ZenParser::FileVersion version) {
+  LogInfo() << "ZEN: Reading camera presets...";
+
+  ChunkHeader header;
+  while(readChunkStart(header)) {
+    zCVobData preset;
+    preset.vobType = zCVobData::VT_zCCSCamera;
+    zCVob::readObjectData(preset, *this, header, version);
+    vobs.emplace_back(preset);
+    }
+  readChunkEnd();
+  if(getRemainBytes()>0)
+    LogInfo() << "ZEN: Unclean read of camera presets " << getRemainBytes() << " bytes remained";
+  }
+
 size_t ZenParser::readVobTree(zCVobData& vob, FileVersion version) {
   ZenParser::ChunkHeader header = {};
   readChunkStart(header);
-
   vob.vobName     = std::move(header.name);
   vob.vobType     = zCVobData::VT_Unknown;
   zCVob::readObjectData(vob, *this, header, version);
@@ -502,9 +544,8 @@ size_t ZenParser::readVobTree(zCVobData& vob, FileVersion version) {
   vob.childVobs.resize(numChildren);
 
   size_t num = 0;
-  for(uint32_t i=0; i<numChildren; i++) {
+  for(uint32_t i=0; i<numChildren; i++)
     num += readVobTree(vob.childVobs[i],version);
-    }
   return numChildren+1;
   }
 
@@ -525,7 +566,7 @@ void ZenParser::readWayNetData(zCWayNetData& info) {
   uint32_t numWaypoints = 0;
   getImpl()->readEntry("numWaypoints", numWaypoints);
 
-  LogInfo() << "Loading " << numWaypoints << " freepoints";
+  LogInfo() << "Loading " << numWaypoints << (numWaypoints!=1 ? " freepoints" : " freepoint");
 
   std::unordered_map<uint32_t, size_t> wpRefMap;
   for(uint32_t i = 0; i < numWaypoints; i++) {
@@ -544,22 +585,23 @@ void ZenParser::readWayNetData(zCWayNetData& info) {
   uint32_t numWays = 0;
   getImpl()->readEntry("numWays", numWays);
 
-  LogInfo() << "Loading " << numWays << " edges";
+  LogInfo() << "Loading " << numWays << (numWays!=1 ? " edges" : " edge");
 
   for(uint32_t i = 0; i < numWays; i++) {
-    size_t wp1, wp2;
+    size_t wp1 = 0, wp2 = 0;
 
     size_t* tgt = &wp1;
     for(int r = 0; r < 2; r++) {
       ZenParser::ChunkHeader wph;
       // References might occur here
       readChunkStart(wph);
+      assert(wph.name[0]=='w' && wph.name[1]=='a' && wph.name[2]=='y' && (wph.name[3]=='l' || wph.name[3]=='r'));
 
       // Loading a reference?
       if(wph.classId==zReference) {
         *tgt = wpRefMap[wph.objectID];
-        } else
-      if(wph.classId==zCWaypoint) {
+        } 
+      else if(wph.classId==zCWaypoint) {
         // Create new waypoint
         zCWaypointData w = readWaypoint();
         info.waypoints.push_back(w);
@@ -572,7 +614,7 @@ void ZenParser::readWayNetData(zCWayNetData& info) {
       readChunkEnd();
       tgt = &wp2;
       }
-    info.edges.push_back(std::make_pair(wp1, wp2));
+    info.edges.emplace_back(wp1, wp2);
     }
 
   LogInfo() << "Done loading edges!";

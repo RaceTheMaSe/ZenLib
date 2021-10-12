@@ -3,7 +3,7 @@
 #include <string>
 #include "zTypes.h"
 #include "zenParser.h"
-#include <stdlib.h>
+#include <cstdlib>
 #include "utils/alignment.h"
 #include "utils/logger.h"
 #include "vdfs/fileIndex.h"
@@ -47,11 +47,11 @@ enum class EIdxRegisterMesh
 std::vector<std::string> splitDecl(const std::string& _line)
 {
     // Example: registerMesh ("Gob_Body.ASC")
-    // Example: ani			("s_FistRun"					1	"s_FistRun"			0.1	0.1	M.	"Gob_1hRunAmbient_M01.asc"	F	0	30	FPS:10)
+    // Example: ani      ("s_FistRun"          1  "s_FistRun"      0.1  0.1  M.  "Gob_1hRunAmbient_M01.asc"  F  0  30  FPS:10)
 
     // Collapse
     std::vector<std::string> out;
-    out.push_back("");
+    out.emplace_back("");
     bool inArg = true;
     for (auto& c : _line)
     {
@@ -59,7 +59,7 @@ std::vector<std::string> splitDecl(const std::string& _line)
         {
             if (inArg)  // Only add a new section, when the last one was filled
             {
-                out.push_back("");
+                out.emplace_back("");
                 inArg = false;
             }
         }
@@ -86,12 +86,12 @@ zCModelPrototype::zCModelPrototype(const std::string& fileName, const VDFS::File
     fileIndex.getFileData(fileName, data);
 
     if (data.empty())
+        LogInfo() << "Failed to find model prototype " << fileName;
         return;  // TODO: Throw an exception or something
 
     try
     {
         // Create parser from memory
-        // FIXME: There is an internal copy of the data here. Optimize!
         ZenLoad::ZenParser parser(data.data(), data.size());
 
         readObjectData(parser);
@@ -173,19 +173,19 @@ void zCModelPrototype::readObjectData(ZenParser& parser)
         ani.endFrame = atoi(args[(int)EIdxAni::endFrame].c_str());
 
         ani.flags = 0;
-        if (args[(int)EIdxAni::flags].find("m") != std::string::npos)
+        if (args[(int)EIdxAni::flags].find('m') != std::string::npos)
             ani.flags |= Animation::MoveObject;
 
-        if (args[(int)EIdxAni::flags].find("r") != std::string::npos)
+        if (args[(int)EIdxAni::flags].find('r') != std::string::npos)
             ani.flags |= Animation::RotateObject;
 
-        if (args[(int)EIdxAni::flags].find("e") != std::string::npos)
+        if (args[(int)EIdxAni::flags].find('e') != std::string::npos)
             ani.flags |= Animation::WaitEnd;
 
-        if (args[(int)EIdxAni::flags].find("f") != std::string::npos)
+        if (args[(int)EIdxAni::flags].find('f') != std::string::npos)
             ani.flags |= Animation::Fly;
 
-        if (args[(int)EIdxAni::flags].find("i") != std::string::npos)
+        if (args[(int)EIdxAni::flags].find('i') != std::string::npos)
             ani.flags |= Animation::Idle;
 
         m_Animations.push_back(ani);
@@ -202,32 +202,21 @@ void zCModelPrototype::readObjectData(ZenParser& parser)
 
             LogInfo() << "MDS-Line: " << line;
 
-            if (line.find("//") != std::string::npos)
-                continue;  // Skip comments. These MUST be on their own lines, by definition.
-            else if (line.find("anienum") != std::string::npos)
-                continue;
-            else if (line.find("aniblend") != std::string::npos)
-                continue;
-            else if (line.find("eventmmstartani") != std::string::npos)
-                continue;
-            else if (line.find("anialias") != std::string::npos)
-                continue;
-            else if (line.find("anicomb") != std::string::npos)
-                continue;
-            else if (line.find("anidisable") != std::string::npos)
+            if ((line.find("//") != std::string::npos) || // Skip comments. These MUST be on their own lines, by definition.
+                (line.find("anienum") != std::string::npos) ||
+                (line.find("aniblend") != std::string::npos) ||
+                (line.find("eventmmstartani") != std::string::npos) ||
+                (line.find("anialias") != std::string::npos) ||
+                (line.find("anicomb") != std::string::npos) ||
+                (line.find("anidisable") != std::string::npos) ||
+                (line.find("meshandtree") != std::string::npos) ||
+                (line.find("registermesh") != std::string::npos) ||
+                (line.find("startmesh") != std::string::npos) ||
+                (line.find('{') != std::string::npos) ||
+                (line.find('}') != std::string::npos)) //break; // There can be only one } per block
                 continue;
             else if (line.find("ani") != std::string::npos)
                 readAni(line);
-            else if (line.find("meshandtree") != std::string::npos)
-                continue;
-            else if (line.find("registermesh") != std::string::npos)
-                continue;
-            else if (line.find("startmesh") != std::string::npos)
-                continue;
-            else if (line.find("{") != std::string::npos)
-                continue;
-            else if (line.find("}") != std::string::npos)
-                continue;  //break; // There can be only one } per block
         }
     };
 

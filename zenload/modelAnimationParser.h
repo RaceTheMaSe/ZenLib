@@ -12,8 +12,8 @@ namespace ZenLoad
     class ModelAnimationParser
     {
     public:
-        typedef std::vector<zCModelAniSample> Samples;
-        typedef std::vector<uint32_t> NodeIndex;
+        using Samples = std::vector<zCModelAniSample>;
+        using NodeIndex = std::vector<uint32_t>;
 
         enum EChunkType
         {
@@ -21,7 +21,7 @@ namespace ZenLoad
             CHUNK_EOF,
 
             CHUNK_HEADER = 0xA020,
-            CHUNK_RAWDATA = 0xA090,
+            CHUNK_RAWDATA = 0xA090
 
         };
 
@@ -35,7 +35,7 @@ namespace ZenLoad
      *
      * @return The header read during the last call to parse().
      */
-        const zCModelAniHeader& getHeader() const { return m_Header; }
+        const zCModelAni::ModelAniHeader& getHeader() const { return m_Header; }
 
         /** Returns the parsed samples.
      *
@@ -60,7 +60,7 @@ namespace ZenLoad
 
         float m_Scale = 1.0f;
 
-        zCModelAniHeader m_Header;
+        zCModelAni::ModelAniHeader m_Header = zCModelAni::ModelAniHeader();
         Samples m_Samples;
         NodeIndex m_NodeIndex;
 

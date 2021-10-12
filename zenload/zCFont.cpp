@@ -5,6 +5,7 @@
 #include "zCFont.h"
 #include <algorithm>
 #include "zenParser.h"
+#include "utils/mathlib.h"
 #include <utils/logger.h>
 #include <vdfs/fileIndex.h>
 
@@ -15,14 +16,12 @@ zCFont::zCFont(const char *fileName, const VDFS::FileIndex& fileIndex)
     std::vector<uint8_t> data;
     fileIndex.getFileData(fileName, data);
 
-    if (data.empty())
-        return;  // TODO: Throw an exception or something
+    if (data.empty()) {
+      // LogInfo() << "Failed to find font " << fileName; // FIXME: happens when paintEvent in gameMenu is called early and from render thread.
+      return;
+    }
 
     parseFNTData(data);
-}
-
-zCFont::~zCFont()
-{
 }
 
 bool zCFont::parseFNTData(const std::vector<uint8_t>& fntData)
@@ -30,7 +29,6 @@ bool zCFont::parseFNTData(const std::vector<uint8_t>& fntData)
     try
     {
         // Create parser from memory
-        // FIXME: There is an internal copy of the data here. Optimize!
         ZenLoad::ZenParser parser(fntData.data(), fntData.size());
 
         /**
@@ -65,10 +63,9 @@ bool zCFont::parseFNTData(const std::vector<uint8_t>& fntData)
         }
 
         // Checks are through, directly write to font-info now
-
-        parser.readBinaryRaw(m_Info.glyphWidth, sizeof(m_Info.glyphWidth));
-        parser.readBinaryRaw(m_Info.fontUV1, sizeof(m_Info.fontUV1));
-        parser.readBinaryRaw(m_Info.fontUV2, sizeof(m_Info.fontUV2));
+        parser.readBinaryRaw((uint8_t*)m_Info.glyphWidth, sizeof(m_Info.glyphWidth));
+        parser.readBinaryRaw((ZMath::float2*)m_Info.fontUV1, sizeof(m_Info.fontUV1));
+        parser.readBinaryRaw((ZMath::float2*)m_Info.fontUV2, sizeof(m_Info.fontUV2));
 
         // Plug the other information in
         m_Info.fontName = name;

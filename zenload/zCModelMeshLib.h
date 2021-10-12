@@ -39,7 +39,7 @@ namespace ZenLoad
 
         /**
          * @brief Reads the mesh-object from the given binary stream
-         * @param fromZen Whether this mesh is supposed to be read from a zenfile. In this case, information about the binary chunk is also read.
+         * @param parser ZenParser object
          */
         void loadMDM(ZenParser& parser);
 
@@ -120,10 +120,23 @@ namespace ZenLoad
         /**
          * @brief Checksum for this node hierachy
          */
-        uint32_t m_NodeChecksum;
+        uint32_t m_NodeChecksum{};
 
         ZMath::float3 m_BBox[2] = {{0.f,0.f,0.f}, {0.f,0.f,0.f}};
         ZMath::float3 m_BBoxCollision[2] = {{0.f,0.f,0.f}, {0.f,0.f,0.f}};
         ZMath::float3 m_RootNodeTranslation = {0.f,0.f,0.f};
+
+        /*
+         *  source file information
+         */
+        struct ModelSource
+        {
+          uint32_t    version;
+          ZMath::float4 c[4];
+          std::string source;
+        };
+
+        ModelSource mdm;
+        ModelSource mdh;
     };
 }  // namespace ZenLoad

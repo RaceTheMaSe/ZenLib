@@ -22,7 +22,7 @@ bool ParserImplBinary::readChunkStart(ZenParser::ChunkHeader& header)
 
     // Skip chunk-header
     header.name      = m_pParser->readLine(false);
-    auto cls = m_pParser->readLine(false); // classname
+    auto cls         = m_pParser->readLine(false); // classname
     header.classId   = parseClassName(cls.data(),cls.size());
     header.objectID  = objectIndex;
     header.size      = chunksize;
@@ -71,7 +71,10 @@ bool ParserImplBinary::readString(char* buf, size_t size)
 /**
  * @brief Reads data of the expected type. Throws if the read type is not the same as specified and not 0
  */
-void ParserImplBinary::readEntryImpl(const char* /*expectedName*/, void* target, size_t targetSize, EZenValueType expectedType) {
+void ParserImplBinary::readEntryImpl(const char* /*expectedName*/, void* target, size_t targetSize, EZenValueType expectedType, bool optional) {
+  // if(optional) // FIXME: handle this
+  //   LogInfo() << "Reading optional in binary archive - not implemented";
+
   // Special case for strings, they're read until 0-bytes
   if(expectedType == ZVT_STRING) {
     *reinterpret_cast<std::string*>(target) = m_pParser->readLine(false);

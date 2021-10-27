@@ -503,6 +503,7 @@ namespace ZenLoad
         };
 
         EVobType      vobType = VT_zCVob;
+        uint32_t      vobObjectID = uint32_t(-1);
 
         uint32_t      pack = 0;
         std::string   presetName;

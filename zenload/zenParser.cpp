@@ -536,6 +536,7 @@ size_t ZenParser::readVobTree(zCVobData& vob, FileVersion version) {
   readChunkStart(header);
   vob.vobName     = std::move(header.name);
   vob.vobType     = zCVobData::VT_Unknown;
+  vob.vobObjectID = header.objectID;
   zCVob::readObjectData(vob, *this, header, version);
 
   // Read how many vobs this one has as child

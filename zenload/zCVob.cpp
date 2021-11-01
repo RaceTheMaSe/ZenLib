@@ -83,7 +83,7 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
     info.rotationMatrix3x3     = pd.trafoRotWS;
     info.rotationMatrix        = info.rotationMatrix3x3.toMatrix();
     info.showVisual            = pd.bitfield.showVisual;
-    info.visualCamAlign        = pd.bitfield.visualCamAlign;
+    info.visualCamAlign        = VisualCamAlign(pd.bitfield.visualCamAlign);
     info.cdStatic              = pd.bitfield.cdStatic;
     info.cdDyn                 = pd.bitfield.cdDyn;
     info.staticVob             = pd.bitfield.staticVob;

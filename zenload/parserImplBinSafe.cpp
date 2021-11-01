@@ -232,6 +232,8 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
         str.resize(size);
         m_pParser->readBinaryRaw(&str[0], size);
         *reinterpret_cast<std::string*>(target) = str;
+        if(optional && str=="[]")
+          m_pParser->setSeek(seek);
         break;
         }
       case ZVT_HASH:

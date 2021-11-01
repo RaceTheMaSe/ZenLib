@@ -209,6 +209,10 @@ void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size
       case ZVT_0:
         break;
       case ZVT_STRING:
+        if(optional && strcmp(value,"[]")==0) { // read optional entry at end of block and revert if this is chunkEnd
+          m_pParser->setSeek(seek);
+          value = nullptr;
+          }
         *reinterpret_cast<std::string*>(target) = value;
         break;
       case ZVT_INT:

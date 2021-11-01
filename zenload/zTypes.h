@@ -117,6 +117,13 @@ namespace ZenLoad
         FT_FLARE
     };
 
+    enum VisualCamAlign : uint8_t
+    {
+        CA_NONE  = 0,
+        CA_YAW,
+        CA_ALL
+    };
+
     enum AnimMode : uint8_t
     {
         AM_NONE  = 0,
@@ -135,8 +142,8 @@ namespace ZenLoad
     {
         RUN_ALWAYS = 0,
         RUN_TIMES,
-        RUN_PERHOUR,
-        RUN_PERDAY
+        RUN_PER_HOUR,
+        RUN_PER_DAY
     };
 
     enum class ScreenFXEventTypes : uint8_t
@@ -502,29 +509,29 @@ namespace ZenLoad
             VT_zReference
         };
 
-        EVobType      vobType = VT_zCVob;
-        uint32_t      vobObjectID = uint32_t(-1);
+        EVobType       vobType = VT_zCVob;
+        uint32_t       vobObjectID = uint32_t(-1);
 
-        uint32_t      pack = 0;
-        std::string   presetName;
-        ZMath::float3 bbox[2]               = {};
-        ZMath::Matrix rotationMatrix        = {};
-        zMAT3         rotationMatrix3x3     = {};
-        ZMath::Matrix worldMatrix           = {};
-        ZMath::float3 position              = {};
-        std::string   vobName;
-        std::string   visual;
-        bool          showVisual            = false;
-        uint8_t       visualCamAlign        = 0;
-        AnimMode      visualAniMode         = AnimMode::AM_NONE;
-        float         visualAniModeStrength = 0;
-        float         vobFarClipScale       = 0;
-        bool          cdStatic              = false;
-        bool          cdDyn                 = false;
-        bool          staticVob             = false;
-        uint8_t       dynamicShadow         = 0;
-        int32_t       zBias                 = 0;
-        bool          isAmbient             = false;
+        uint32_t       pack = 0;
+        std::string    presetName;
+        ZMath::float3  bbox[2]               = {};
+        ZMath::Matrix  rotationMatrix        = {};
+        zMAT3          rotationMatrix3x3     = {};
+        ZMath::Matrix  worldMatrix           = {};
+        ZMath::float3  position              = {};
+        std::string    vobName;
+        std::string    visual;
+        bool           showVisual            = false;
+        VisualCamAlign visualCamAlign        = VisualCamAlign::CA_NONE;
+        AnimMode       visualAniMode         = AnimMode::AM_NONE;
+        float          visualAniModeStrength = 0;
+        float          vobFarClipScale       = 0;
+        bool           cdStatic              = false;
+        bool           cdDyn                 = false;
+        bool           staticVob             = false;
+        uint8_t        dynamicShadow         = 0;
+        int32_t        zBias                 = 0;
+        bool           isAmbient             = false;
 
         // References
         size_t visualReference              = 0;
@@ -742,6 +749,7 @@ namespace ZenLoad
         struct
         {
             std::string scriptFunc;
+            std::string triggerTarget;
         } zCTriggerScript;
 
         struct

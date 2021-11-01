@@ -118,7 +118,7 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
     rd.readEntry("vobName",        info.vobName);
     rd.readEntry("visual",         info.visual);
     rd.readEntry("showVisual",     info.showVisual);
-    rd.readEntry("visualCamAlign", info.visualCamAlign);
+    rd.readEntry("visualCamAlign", reinterpret_cast<uint8_t&>(info.visualCamAlign));
 
     if(version==ZenParser::FileVersion::Gothic1) {
       rd.readEntry("cdStatic",  info.cdStatic);
@@ -373,7 +373,8 @@ static void read_zCVob_zCTrigger_oCTriggerScript(zCVobData &info, ZenParser &par
 
   auto& rd = *parser.getImpl();
   info.vobType = zCVobData::VT_zCTriggerScript;
-  rd.readEntry("scriptFunc", info.zCTriggerScript.scriptFunc);
+  rd.readEntry("scriptFunc"   , info.zCTriggerScript.scriptFunc);
+  rd.readEntry("triggerTarget", info.zCTriggerScript.triggerTarget,true);
   }
 
 static void read_zCVob_oCMOB(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {

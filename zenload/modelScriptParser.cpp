@@ -308,7 +308,7 @@ int32_t MdsParserTxt::readOptI32() {
 int16_t MdsParserTxt::readOptI16() {
   implReadItem(TK_Num,true);
   if (buf.size() > 0)
-      return (int16_t)std::atoi(buf.c_str());
+    return (int16_t)std::atoi(buf.c_str());
   return 0;
   }
 
@@ -784,13 +784,12 @@ void MdsParser::readEvent(std::vector<zCModelEvent> &out) {
     case DEF_WINDOW:{
       str = readStr();
       std::stringstream ss(str);
-      while(!ss.eof())
-        {
-          int frame=0;
-          ss >> frame;
-          if(!ss.good() && !ss.eof())
-            break;
-          evt.m_Int.push_back(frame);
+      while(!ss.eof()) {
+        int frame=0;
+        ss >> frame;
+        if(!ss.good() && !ss.eof())
+          break;
+        evt.m_Int.push_back(frame);
         }
       break;
       }

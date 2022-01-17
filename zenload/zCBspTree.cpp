@@ -27,94 +27,93 @@ zCBspTreeData zCBspTree::readObjectData(ZenLoad::ZenParser& parser, ZenLoad::zCM
   BinaryChunkInfo chunkInfo{};
 
   bool done = false;
-  while (!done && parser.getSeek() < binFileEnd)
-  {
-      // Read chunk header and calculate position of next chunk
-      parser.readStructure(chunkInfo);
+  while (!done && parser.getSeek() < binFileEnd) {
+    // Read chunk header and calculate position of next chunk
+    parser.readStructure(chunkInfo);
 
-      size_t chunkEnd = parser.getSeek() + chunkInfo.length;
+    size_t chunkEnd = parser.getSeek() + chunkInfo.length;
 
-      switch (chunkInfo.id) {
-        case EBspChunk::CHUNK_BSP:
-          info.version = parser.readBinaryWord();
-          info.mode = static_cast<zCBspTreeData::TreeMode>(parser.readBinaryDWord());
-          break;
+    switch (chunkInfo.id) {
+      case EBspChunk::CHUNK_BSP:
+        info.version = parser.readBinaryWord();
+        info.mode = static_cast<zCBspTreeData::TreeMode>(parser.readBinaryDWord());
+        break;
 
-        case CHUNK_BSP_POLYLIST: {
-          uint32_t numPolys = parser.readBinaryDWord();
-          info.treePolyIndices.resize(numPolys);
-          parser.readBinaryRaw(info.treePolyIndices.data(),numPolys*sizeof(uint32_t));
-          }
-          break;
+      case CHUNK_BSP_POLYLIST: {
+        uint32_t numPolys = parser.readBinaryDWord();
+        info.treePolyIndices.resize(numPolys);
+        parser.readBinaryRaw(info.treePolyIndices.data(),numPolys*sizeof(uint32_t));
+        }
+        break;
 
-        case CHUNK_BSP_TREE: {
-          uint32_t numNodes = parser.readBinaryDWord();
-          uint32_t numLeafs = parser.readBinaryDWord();
+      case CHUNK_BSP_TREE: {
+        uint32_t numNodes = parser.readBinaryDWord();
+        uint32_t numLeafs = parser.readBinaryDWord();
 
-          if(!numNodes) {
-            if(parser.getSeek()!=chunkEnd)
-              LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - bsp tree without nodes";
-            parser.setSeek(chunkEnd);  // Skip chunk
-            break;
-            }
-
-          info.nodes.reserve(numNodes);
-          info.leafIndices.reserve(numLeafs);
-          info.nodes.emplace_back();
-
-          loadRec(parser,fileInfo,info,0,true);
-          assert(numNodes==info.nodes.size());
-          assert(numLeafs==info.leafIndices.size());
-          }
-          break;
-
-        case CHUNK_BSP_LEAF_LIGHT:
-          for(auto& l:info.leafIndices)
-            parser.readStructure(info.nodes[l].light);
+        if(!numNodes) {
           if(parser.getSeek()!=chunkEnd)
-            LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - leaf_light";
+            LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - bsp tree without nodes";
           parser.setSeek(chunkEnd);  // Skip chunk
           break;
-
-        case CHUNK_BSP_OUTDOOR_SECTORS: {
-          uint32_t numSectors = parser.readBinaryDWord();
-
-          // Sectors
-          for(uint32_t i = 0; i < numSectors; i++) {
-            info.sectors.emplace_back();
-            zCSector& sector = info.sectors.back();
-
-            sector.name = parser.readLine(false);
-            if(fileInfo.version==(uint32_t)WorldVersion::VERSION_G1_08k) // FIXME: not only g1 probably ... its about leading zeros, underlines in sector name that are mixed up between saved variant and queries made upon the data
-              modifyToTwoDigitNumbers(sector.name);
-            uint32_t numSectorNodes = parser.readBinaryDWord();
-            uint32_t numSectorPortals = parser.readBinaryDWord();
-
-            // Read Nodes this sector belongs to
-            sector.bspNodeIndices.resize(numSectorNodes);
-            parser.readBinaryRaw(sector.bspNodeIndices.data(),numSectorNodes*sizeof(uint32_t));
-
-            // Read portals in/out of this sector
-            sector.portalPolygonIndices.resize(numSectorPortals);
-            parser.readBinaryRaw(sector.portalPolygonIndices.data(),numSectorPortals*sizeof(uint32_t));
-            }
-
-          // Portal-list
-          uint32_t numPortals = parser.readBinaryDWord();
-          info.portalPolyIndices.resize(numPortals);
-          parser.readBinaryRaw(info.portalPolyIndices.data(),numPortals*sizeof(uint32_t));
           }
-          break;
 
-        case CHUNK_BSP_END:
-          done = true;
-          /*uint8_t unknown_end =*/ parser.readBinaryByte(); // checksum or whatever 0x42 == 66
-          break;
+        info.nodes.reserve(numNodes);
+        info.leafIndices.reserve(numLeafs);
+        info.nodes.emplace_back();
+
+        loadRec(parser,fileInfo,info,0,true);
+        assert(numNodes==info.nodes.size());
+        assert(numLeafs==info.leafIndices.size());
         }
-      if(parser.getSeek()!=chunkEnd)
-        LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
-      parser.setSeek(chunkEnd);  // Skip chunk
-  }
+        break;
+
+      case CHUNK_BSP_LEAF_LIGHT:
+        for(auto& l:info.leafIndices)
+          parser.readStructure(info.nodes[l].light);
+        if(parser.getSeek()!=chunkEnd)
+          LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - leaf_light";
+        parser.setSeek(chunkEnd);  // Skip chunk
+        break;
+
+      case CHUNK_BSP_OUTDOOR_SECTORS: {
+        uint32_t numSectors = parser.readBinaryDWord();
+
+        // Sectors
+        for(uint32_t i = 0; i < numSectors; i++) {
+          info.sectors.emplace_back();
+          zCSector& sector = info.sectors.back();
+
+          sector.name = parser.readLine(false);
+          if(fileInfo.version==(uint32_t)WorldVersion::VERSION_G1_08k) // FIXME: not only g1 probably ... its about leading zeros, underlines in sector name that are mixed up between saved variant and queries made upon the data
+            modifyToTwoDigitNumbers(sector.name);
+          uint32_t numSectorNodes = parser.readBinaryDWord();
+          uint32_t numSectorPortals = parser.readBinaryDWord();
+
+          // Read Nodes this sector belongs to
+          sector.bspNodeIndices.resize(numSectorNodes);
+          parser.readBinaryRaw(sector.bspNodeIndices.data(),numSectorNodes*sizeof(uint32_t));
+
+          // Read portals in/out of this sector
+          sector.portalPolygonIndices.resize(numSectorPortals);
+          parser.readBinaryRaw(sector.portalPolygonIndices.data(),numSectorPortals*sizeof(uint32_t));
+          }
+
+        // Portal-list
+        uint32_t numPortals = parser.readBinaryDWord();
+        info.portalPolyIndices.resize(numPortals);
+        parser.readBinaryRaw(info.portalPolyIndices.data(),numPortals*sizeof(uint32_t));
+        }
+        break;
+
+      case CHUNK_BSP_END:
+        done = true;
+        /*uint8_t unknown_end =*/ parser.readBinaryByte(); // checksum or whatever 0x42 == 66
+        break;
+      }
+    if(parser.getSeek()!=chunkEnd)
+      LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
+    parser.setSeek(chunkEnd);  // Skip chunk
+    }
 
   // Now get the list of non-lod polygons to load the worldmesh without them
   std::vector<size_t> lodPolys;
@@ -130,9 +129,7 @@ zCBspTreeData zCBspTree::readObjectData(ZenLoad::ZenParser& parser, ZenLoad::zCM
   bool forceG132bitIndices = false;
   ZenParser::ZenHeader zenHeader = parser.getZenHeader();
   if (!zenHeader.user.empty())
-  {
     forceG132bitIndices = zenHeader.user.find("XZEN") != std::string::npos;
-  }
 
   mesh->readObjectData(parser, nonLodPolys, forceG132bitIndices);
 
@@ -267,7 +264,7 @@ void zCBspTree::connectPortals(zCBspTreeData& info, zCMesh* worldMesh) {
   }
 
 void zCBspTree::modifyToTwoDigitNumbers(std::string& name) {
-  // FIXME: KI, HH, and H�TTE / HÜTTE in G1 are queried for one digit format - skip those - also this reveals some text encoding inconsistencies - Utf8, Ascii, Utf16 ... I don't know .. this will lead to some bigger refactoring to make this clean
+  // FIXME: KI, HH, and H�TTE / HÜTTE in G1 are queried for one digit format - skip those - also this reveals some text encoding inconsistencies - Ascii, ISO 8859 ... UTF8 ... whatever
   if(name.size()<=3)
     return;
   if(name.find("H\xfcTTE")!=std::string::npos /*|| name.compare("HHMH1")==0 - G2 room not found on load ... but this is probably wrong to hack it here*/)
@@ -277,4 +274,69 @@ void zCBspTree::modifyToTwoDigitNumbers(std::string& name) {
     ++it;
   if(std::distance(it,name.end())==1)
     name=name.substr(0,std::distance(name.begin(),it))+"0"+*it;
+  }
+  
+std::vector<size_t> zCBspTree::getNonLodPolygons(const zCBspTreeData& d,std::vector<size_t>& lodReturn) {
+  size_t size = 0;
+  size_t lodSize = 0;
+  for(size_t nidx : d.leafIndices) {
+    const zCBspNode& n = d.nodes[nidx];
+    if(!n.lodFlag)
+      size += n.numPolys;
+    else
+      lodSize += n.numPolys;
+    }
+
+  std::vector<size_t> r(size);
+  std::vector<size_t> l(lodSize);
+  size = 0;
+  lodSize=0;
+
+  for(size_t nidx : d.leafIndices) {
+    const zCBspNode& n      = d.nodes[nidx];
+    if(!n.lodFlag) {
+      const uint32_t*  treeId = d.treePolyIndices.data()+n.treePolyIndex;
+      size_t*          ret    = r.data()+size;
+      for(size_t i=0; i<n.numPolys; ++i)
+        ret[i] = treeId[i];
+      size += n.numPolys;
+      }
+    else {
+      const uint32_t*  treeId = d.treePolyIndices.data()+n.treePolyIndex;
+      size_t*          ret    = l.data()+lodSize;
+      for(size_t i=0; i<n.numPolys; ++i)
+        ret[i] = treeId[i];
+      lodSize += n.numPolys;
+      }
+    }
+
+  lodReturn=l;
+  return r;
+  }
+
+SectorIndex zCBspTree::findSectorIndexByName(zCBspTreeData& info, const std::string& sectorname) {
+  for(size_t i = 0; i < info.sectors.size(); i++) {
+    if(info.sectors[i].name == sectorname)
+      return SectorIndex(i);
+    }
+
+  return SECTOR_INDEX_INVALID;
+  }
+
+std::string zCBspTree::extractSourceSectorFromMaterialName(const std::string& name) {
+  std::string sectorsOnly = name.substr(name.find_first_of(':') + 1);
+  return sectorsOnly.substr(0, sectorsOnly.find_first_of('_'));
+  }
+
+std::string zCBspTree::extractDestSectorFromMaterial(const std::string& name) {
+  std::string sectorsOnly = name.substr(name.find_first_of(':') + 1);
+  return sectorsOnly.substr(sectorsOnly.find_first_of('_') + 1);
+  }
+
+bool zCBspTree::isMaterialForPortal(const zCMaterialData& m) {
+  return m.matName.find("P:")==0;
+  }
+
+bool zCBspTree::isMaterialForSector(const zCMaterialData& m) {
+  return m.matName.find("S:")==0;
   }

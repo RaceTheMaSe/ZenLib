@@ -20,8 +20,8 @@
 using namespace ZenLoad;
 
 /**
- * @brief reads a zen from a vdf
- */
+  * @brief reads a zen from a vdf
+  */
 ZenParser::ZenParser(const std::string& file, const VDFS::FileIndex& vdfs) {
   vdfs.getFileData(file, m_DataStorage);
   m_Data     = m_DataStorage.data();
@@ -29,21 +29,21 @@ ZenParser::ZenParser(const std::string& file, const VDFS::FileIndex& vdfs) {
   }
 
 /**
- * @brief reads a zen from memory
- */
+  * @brief reads a zen from memory
+  */
 ZenParser::ZenParser(const uint8_t* data, size_t size) : m_Data(data), m_DataSize(size) { }
 
 /**
-* @brief Reads the main ZEN-Header
-*/
+  * @brief Reads the main ZEN-Header
+  */
 void ZenParser::readHeader()
 {
     readHeader(m_Header, m_pParserImpl);
 }
 
 /**
-* @brief Skips the main header
-*/
+  * @brief Skips the main header
+  */
 void ZenParser::skipHeader()
 {
     ZenHeader header;
@@ -54,8 +54,8 @@ void ZenParser::skipHeader()
 }
 
 /**
-* @brief Skipts the ZEN-Header
-*/
+  * @brief Skipts the ZEN-Header
+  */
 void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   if(!skipString("ZenGin Archive"))
     throw std::runtime_error("Not a valid format");
@@ -116,71 +116,58 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   impl->readImplHeader();
   }
 
-void ZenParser::readWorldMesh(oCWorldData& info)
-{
-    LogInfo() << "ZEN: Reading mesh...";
-    m_pWorldMesh = std::make_unique<ZenLoad::zCMesh>();
-    info.bspTree = zCBspTree::readObjectData(*this, m_pWorldMesh.get());
-    LogInfo() << "ZEN: Done reading mesh!";
-}
+void ZenParser::readWorldMesh(oCWorldData& info) {
+  LogInfo() << "ZEN: Reading mesh...";
+  m_pWorldMesh = std::make_unique<ZenLoad::zCMesh>();
+  info.bspTree = zCBspTree::readObjectData(*this, m_pWorldMesh.get());
+  LogInfo() << "ZEN: Done reading mesh!";
+  }
 
 /**
-* @brief Reads a chunk-header
-*/
-bool ZenParser::readChunkStart(ChunkHeader& header)
-{
-    return m_pParserImpl->readChunkStart(header);
-}
+  * @brief Reads a chunk-header
+  */
+bool ZenParser::readChunkStart(ChunkHeader& header) {
+  return m_pParserImpl->readChunkStart(header);
+  }
 
 /**
- * @brief Reads the end of a chunk. Returns true if there actually was an end. 
- *      Otherwise it will leave m_Seek untouched and return false.
- */
-bool ZenParser::readChunkEnd()
-{
-    return m_pParserImpl->readChunkEnd();
-}
+  * @brief Reads the end of a chunk. Returns true if there actually was an end. 
+  *      Otherwise it will leave m_Seek untouched and return false.
+  */
+bool ZenParser::readChunkEnd() {
+  return m_pParserImpl->readChunkEnd();
+  }
 
 /**
- * @brief  Skips an already started chunk
- */
-void ZenParser::skipChunk()
-{
-    size_t level = 1;
+  * @brief  Skips an already started chunk
+  */
+void ZenParser::skipChunk() {
+  size_t level = 1;
 
-    do
-    {
-        ChunkHeader header;
-        if (readChunkStart(header))
-        {
-            level++;
-        }
-        else if (readChunkEnd())
-        {
-            level--;
-        }
-        else
-        {
-            skipEntry();
-        }
-
+  do {
+    ChunkHeader header;
+    if (readChunkStart(header))
+      level++;
+    else if (readChunkEnd())
+      level--;
+    else
+      skipEntry();
     } while (level > 0);
-}
+  }
 
 /**
-* @brief Skips an entry
-*/
-void ZenParser::skipEntry()
-{
-    ParserImpl::EZenValueType type = ParserImpl::EZenValueType::ZVT_0;
-    size_t size = 0;
+  * @brief Skips an entry
+  */
+void ZenParser::skipEntry() {
+  ParserImpl::EZenValueType type = ParserImpl::EZenValueType::ZVT_0;
+  size_t size = 0;
 
-    // Read type and size first, so we can allocate the data
-    m_pParserImpl->readEntryType(type, size);
+  // Read type and size first, so we can allocate the data
+  m_pParserImpl->readEntryType(type, size);
 
-    // Skip the entry
-    m_Seek += size;
-}
+  // Skip the entry
+  m_Seek += size;
+  }
 
 /**
  * @brief reads an ASCII datatype from the loaded file
@@ -201,100 +188,89 @@ int32_t ZenParser::readIntASCII() {
 /**
  * @brief reads an ASCII datatype from the loaded file
  */
-bool ZenParser::readBoolASCII()
-{
-    skipSpaces();
-    bool retVal = false;
-    if (m_Data[m_Seek] != '0' && m_Data[m_Seek] != '1')
-        throw std::runtime_error("Value is not a bool"); else
-        retVal = m_Data[m_Seek] == '0' ? false : true;
+bool ZenParser::readBoolASCII() {
+  skipSpaces();
+  bool retVal = false;
+  if (m_Data[m_Seek] != '0' && m_Data[m_Seek] != '1')
+      throw std::runtime_error("Value is not a bool"); else
+      retVal = m_Data[m_Seek] == '0' ? false : true;
 
-    ++m_Seek;
-    return retVal;
-}
+  ++m_Seek;
+  return retVal;
+  }
 
 /**
  * @brief Reads a string until \r, \n or a space is found
  */
-std::string ZenParser::readString(bool skip)
-{
-    if(skip)
-      skipSpaces();
+std::string ZenParser::readString(bool skip) {
+  if(skip)
+    skipSpaces();
 
-    const char* begin = reinterpret_cast<const char*>(m_Data+m_Seek);
-    size_t      size  = 0;
-    while(m_Seek<m_DataSize) {
-      if(m_Data[m_Seek]=='\n' || m_Data[m_Seek]=='\r' || m_Data[m_Seek]=='\t' || m_Data[m_Seek]==' ' || m_Data[m_Seek]=='\0') {
-        ++m_Seek;
+  const char* begin = reinterpret_cast<const char*>(m_Data+m_Seek);
+  size_t      size  = 0;
+  while(m_Seek<m_DataSize) {
+    if(m_Data[m_Seek]=='\n' || m_Data[m_Seek]=='\r' || m_Data[m_Seek]=='\t' || m_Data[m_Seek]==' ' || m_Data[m_Seek]=='\0') {
+      ++m_Seek;
+      break;
+      }
+    ++size;
+    ++m_Seek;
+    }
+
+  std::string str(begin,size);
+  return str;
+  }
+
+/**
+  * @brief skips a string and checks if it matches the given expected one
+  */
+bool ZenParser::skipString(const std::string& pattern) {
+  skipSpaces();
+  bool retVal = true;
+  if (pattern.empty()) {
+    while(m_Seek<m_DataSize && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!=' ')
+      ++m_Seek;
+    if(m_Seek<m_DataSize)
+      ++m_Seek;
+    }
+  else {
+    size_t lineSeek = 0;
+    while (lineSeek < pattern.size()) {
+      if(m_Seek>=m_DataSize || m_Data[m_Seek]!=(uint8_t)pattern[lineSeek]) {
+        retVal = false;
         break;
         }
-      ++size;
+
       ++m_Seek;
+      ++lineSeek;
       }
-
-    std::string str(begin,size);
-    return str;
-}
+    }
+  return retVal;
+  }
 
 /**
- * @brief skips a string and checks if it matches the given expected one
- */
-bool ZenParser::skipString(const std::string& pattern)
-{
-    skipSpaces();
-    bool retVal = true;
-    if (pattern.empty())
-    {
-        while(m_Seek<m_DataSize && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!=' ')
-          ++m_Seek;
-        if(m_Seek<m_DataSize)
-          ++m_Seek;
+  * @brief Skips all whitespace-characters until it hits a non-whitespace one
+  */
+void ZenParser::skipSpaces() {
+  bool search = true;
+  while (search && m_Seek < m_DataSize) {
+    switch (m_Data[m_Seek]) {
+      case ' ':
+      case '\r':
+      case '\t':
+      case '\n':
+        ++m_Seek;
+        break;
+      default:
+        search = false;
+        break;
+      }
     }
-    else
-    {
-        size_t lineSeek = 0;
-        while (lineSeek < pattern.size())
-        {
-            if(m_Seek>=m_DataSize || m_Data[m_Seek]!=(uint8_t)pattern[lineSeek])
-            {
-                retVal = false;
-                break;
-            }
-
-            ++m_Seek;
-            ++lineSeek;
-        }
-    }
-
-    return retVal;
-}
+  }
 
 /**
-* @brief Skips all whitespace-characters until it hits a non-whitespace one
-*/
-void ZenParser::skipSpaces()
-{
-    bool search = true;
-    while (search && m_Seek < m_DataSize)
-    {
-        switch (m_Data[m_Seek])
-        {
-            case ' ':
-            case '\r':
-            case '\t':
-            case '\n':
-                ++m_Seek;
-                break;
-            default:
-                search = false;
-                break;
-        }
-    }
-}
-
-/**
- * @brief Skips all newline-characters until it hits a non-newline one
- */
+  * @brief Skips all newline-characters until it hits a non-newline one
+  */
 void ZenParser::skipNewLines()
 {
     while (m_Seek < m_DataSize && m_Data[m_Seek] == '\n')
@@ -302,46 +278,40 @@ void ZenParser::skipNewLines()
 }
 
 /**
-* @brief Reads the given type as binary data and returns it
-*/
-uint32_t ZenParser::readBinaryDWord()
-{
-    uint32_t retVal = 0;
-    readStructure(retVal);
+  * @brief Reads the given type as binary data and returns it
+  */
+uint32_t ZenParser::readBinaryDWord() {
+  uint32_t retVal = 0;
+  readStructure(retVal);
 
-    return retVal;
-}
+  return retVal;
+  }
 
-uint16_t ZenParser::readBinaryWord()
-{
-    uint16_t retVal = 0;
-    readStructure(retVal);
+uint16_t ZenParser::readBinaryWord() {
+  uint16_t retVal = 0;
+  readStructure(retVal);
 
-    return retVal;
-}
+  return retVal;
+  }
 
-uint8_t ZenParser::readBinaryByte()
-{
-    uint8_t retVal = *reinterpret_cast<const uint8_t*>(m_Data+m_Seek);
-    m_Seek += sizeof(uint8_t);
-    return retVal;
-}
+uint8_t ZenParser::readBinaryByte() {
+  uint8_t retVal = *reinterpret_cast<const uint8_t*>(m_Data+m_Seek);
+  m_Seek += sizeof(uint8_t);
+  return retVal;
+  }
 
-float ZenParser::readBinaryFloat()
-{
-    float retVal = {};
-    readStructure(retVal);
+float ZenParser::readBinaryFloat() {
+  float retVal = {};
+  readStructure(retVal);
 
-    return retVal;
-}
+  return retVal;
+  }
 
-void ZenParser::readBinaryRaw(void* target, size_t numBytes)
-{
-    if (target != nullptr && numBytes != 0)
-    {
-        std::memcpy(target, &m_Data[m_Seek], numBytes);
-        m_Seek += numBytes;
-      }
+void ZenParser::readBinaryRaw(void* target, size_t numBytes) {
+  if (target != nullptr && numBytes != 0) {
+    std::memcpy(target, &m_Data[m_Seek], numBytes);
+    m_Seek += numBytes;
+    }
   }
 
 char ZenParser::readChar() {
@@ -358,27 +328,25 @@ char ZenParser::peekChar() const {
 /**
 * @brief Reads a line to \r or \n
 */
-std::string ZenParser::readLine(bool skip)
-{
-    const char* at = reinterpret_cast<const char*>(m_Data+m_Seek);
-    size_t      sz = 0;
-    while(m_Seek<m_DataSize && m_Data[m_Seek]!='\r' && m_Data[m_Seek]!='\t' && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!='\0') {
-      sz++;
-      m_Seek++;
-      }
-    std::string retVal(at,sz);
-
-    // Skip trailing \n\r\0
-    //if(m_Header.fileType == FT_BINARY)
+std::string ZenParser::readLine(bool skip) {
+  const char* at = reinterpret_cast<const char*>(m_Data+m_Seek);
+  size_t      sz = 0;
+  while(m_Seek<m_DataSize && m_Data[m_Seek]!='\r' && m_Data[m_Seek]!='\t' && m_Data[m_Seek]!='\n' && m_Data[m_Seek]!='\0') {
+    sz++;
     m_Seek++;
+    }
+  std::string retVal(at,sz);
 
-    if(skip)
-      skipSpaces();
-    return retVal;
-}
+  // Skip trailing \n\r\0
+  //if(m_Header.fileType == FT_BINARY)
+  m_Seek++;
 
-bool ZenParser::readLine(char* buf, size_t size, bool skip)
-{
+  if(skip)
+    skipSpaces();
+  return retVal;
+  }
+
+bool ZenParser::readLine(char* buf, size_t size, bool skip) {
   auto seek0 = m_Seek;
 
   const char* at = reinterpret_cast<const char*>(m_Data+m_Seek);
@@ -400,7 +368,7 @@ bool ZenParser::readLine(char* buf, size_t size, bool skip)
   if(skip)
     skipSpaces();
   return true;
-}
+  }
 
 /**
 * @brief reads the main oCWorld-Object, found in the level-zens

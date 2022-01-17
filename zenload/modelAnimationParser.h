@@ -41,9 +41,7 @@ class ModelAnimationParser {
     const Samples& getSamples() const { return m_Samples; }
 
     /** Returns the parsed nodes.
-       *
        * Call this if parse() returns CHUNK_RAWDATA.
-       *
        * @return The nodes read during the last call to parse().
        */
     const NodeIndex& getNodeIndex() const { return m_NodeIndex; }

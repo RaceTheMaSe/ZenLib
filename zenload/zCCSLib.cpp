@@ -540,12 +540,12 @@ void zCCSLib::readObjectData(ZenParser& parser, ZenLoad::ZenParser::FileVersion 
   }
 
 void zCCSLib::addMessageByName(const std::string& name, oCMsgConversation&& msg) {
-  auto nameUppered = name;
-  std::transform(nameUppered.begin(), nameUppered.end(), nameUppered.begin(), ::toupper);
-  const auto& fileExtension = nameUppered.find(".WAV"); // or make it even more generalized by using a fileext helper function here
-  if(fileExtension!=std::string::npos && !name.empty()) {
-    nameUppered=nameUppered.substr(0,fileExtension);
-    m_MessagesByName[nameUppered] = conversations.size();
+  auto nameUp = name;
+  std::transform(nameUp.begin(), nameUp.end(), nameUp.begin(), ::toupper);
+  const auto& fileExt = nameUp.find(".WAV"); // or make it even more generalized by using a fileext helper function here
+  if(fileExt!=std::string::npos && !name.empty()) {
+    nameUp=nameUp.substr(0,fileExt);
+    m_MessagesByName[nameUp] = conversations.size();
     conversations.emplace_back(std::move(msg));
     }
   }

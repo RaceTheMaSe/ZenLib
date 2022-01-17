@@ -12,31 +12,31 @@ using namespace ZenLoad;
 
 enum class EIdxAni : int
 {
-    def,
-    name,
-    layer,
-    nextAni,
-    blendIn,
-    blendOut,
-    flags,
-    ASC_Name,
-    aniDir,
-    startFrame,
-    endFrame,
-    fps,
+  def,
+  name,
+  layer,
+  nextAni,
+  blendIn,
+  blendOut,
+  flags,
+  ASC_Name,
+  aniDir,
+  startFrame,
+  endFrame,
+  fps,
 };
 
 enum class EIdxMeshAndTree
 {
-    def,
-    name,
-    dontUseMesh
+  def,
+  name,
+  dontUseMesh
 };
 
 enum class EIdxRegisterMesh
 {
-    def,
-    name
+  def,
+  name
 };
 
 /**
@@ -46,190 +46,176 @@ enum class EIdxRegisterMesh
  */
 std::vector<std::string> splitDecl(const std::string& _line)
 {
-    // Example: registerMesh ("Gob_Body.ASC")
-    // Example: ani      ("s_FistRun"          1  "s_FistRun"      0.1  0.1  M.  "Gob_1hRunAmbient_M01.asc"  F  0  30  FPS:10)
+  // Example: registerMesh ("Gob_Body.ASC")
+  // Example: ani      ("s_FistRun"          1  "s_FistRun"      0.1  0.1  M.  "Gob_1hRunAmbient_M01.asc"  F  0  30  FPS:10)
 
-    // Collapse
-    std::vector<std::string> out;
-    out.emplace_back("");
-    bool inArg = true;
-    for (auto& c : _line)
-    {
-        if (c == ' ' || c == '\t' || c == '(')
-        {
-            if (inArg)  // Only add a new section, when the last one was filled
-            {
-                out.emplace_back("");
-                inArg = false;
-            }
+  // Collapse
+  std::vector<std::string> out;
+  out.emplace_back("");
+  bool inArg = true;
+  for (auto& c : _line) {
+    if (c == ' ' || c == '\t' || c == '(') {
+      if (inArg) {  // Only add a new section, when the last one was filled
+        out.emplace_back("");
+        inArg = false;
         }
-        else
-        {
-            if (c != '"' && c != ')')  // Don't add quotes and the closing bracket
-            {
-                out.back() += c;
-                inArg = true;
-            }
+      }
+    else {
+    if (c != '"' && c != ')') { // Don't add quotes and the closing bracket
+      out.back() += c;
+      inArg = true;
+      }
 
-            // Handle empty strings
-            if (c == '"')
-                inArg = true;
-        }
+    // Handle empty strings
+    if (c == '"')
+      inArg = true;
     }
-
-    return out;
+  }
+  return out;
 }
 
-zCModelPrototype::zCModelPrototype(const std::string& fileName, const VDFS::FileIndex& fileIndex)
-{
-    std::vector<uint8_t> data;
-    fileIndex.getFileData(fileName, data);
+zCModelPrototype::zCModelPrototype(const std::string& fileName, const VDFS::FileIndex& fileIndex) {
+  std::vector<uint8_t> data;
+  fileIndex.getFileData(fileName, data);
 
-    if (data.empty())
-        LogInfo() << "Failed to find model prototype " << fileName;
-        return;  // TODO: Throw an exception or something
-
-    try
-    {
-        // Create parser from memory
-        ZenLoad::ZenParser parser(data.data(), data.size());
-
-        readObjectData(parser);
+  if (data.empty()) {
+    LogInfo() << "Failed to find model prototype " << fileName;
+    return;  // TODO: Throw an exception or something
     }
-    catch (std::exception& e)
-    {
-        LogError() << e.what();
-        return;
+
+  try {
+    // Create parser from memory
+    ZenLoad::ZenParser parser(data.data(), data.size());
+
+    readObjectData(parser);
     }
-}
+  catch (std::exception& e) {
+    LogError() << e.what();
+    return;
+    }
+  }
 
 /**
 * @brief Reads the mesh-object from the given binary stream
 */
-void zCModelPrototype::readObjectData(ZenParser& parser)
-{
-    // TODO: Implement G2-Variant of this
+void zCModelPrototype::readObjectData(ZenParser& parser) {
+  // TODO: Implement G2-Variant of this
 
-    enum Section
-    {
-        Model,
-        AniEnum,
-        MeshAndTree,
-        RegisterMesh,
-        StartMesh,
-    };
+  enum Section
+  {
+    Model,
+    AniEnum,
+    MeshAndTree,
+    RegisterMesh,
+    StartMesh,
+  };
 
-    /**
-     * Ani enum
-     */
-    /*
-    auto readAniEnum = [&]() {
-
-        while (parser.getSeek() < parser.getFileSize())
-        {
-            std::string line = parser.readLine(true);
-            std::transform(line.begin(), line.end(), line.begin(), ::tolower);
-
-            LogInfo() << "MDS-Line: " << line;
-
-            if (line.find("//") != std::string::npos)
-                continue; // Skip comments. These MUST be on their own lines, by definition.
-            else if (line.find("}") != std::string::npos)
-                break; // There can be only one } per block
-
-        }
-    };
+  /**
+    * Ani enum
     */
+  /*
+  auto readAniEnum = [&]() {
+    while (parser.getSeek() < parser.getFileSize()) {
+      std::string line = parser.readLine(true);
+      std::transform(line.begin(), line.end(), line.begin(), ::tolower);
 
-    /**
-     * Register mesh
-     */
-    /*
-    auto readRegisterMesh = [&](const std::string& line) {
-        std::vector<std::string> args = splitDecl(line);
+      LogInfo() << "MDS-Line: " << line;
 
-        LogInfo() << "Args: " << args;
+      if (line.find("//") != std::string::npos)
+        continue; // Skip comments. These MUST be on their own lines, by definition.
+      else if (line.find("}") != std::string::npos)
+        break; // There can be only one } per block
+      }
     };
+  */
+
+  /**
+    * Register mesh
     */
+  /*
+  auto readRegisterMesh = [&](const std::string& line) {
+    std::vector<std::string> args = splitDecl(line);
 
-    /**
-     * Ani
-     */
-    auto readAni = [&](const std::string& line) {
-        std::vector<std::string> args = splitDecl(line);
+    LogInfo() << "Args: " << args;
+  };
+  */
 
-        LogInfo() << "Args: " << args;
+  /**
+    * Ani
+    */
+  auto readAni = [&](const std::string& line) {
+    std::vector<std::string> args = splitDecl(line);
 
-        Animation ani;
-        ani.animationName = args[(int)EIdxAni::name];
-        ani.layer         = atoi(args[(int)EIdxAni::layer].c_str());
-        ani.nextAnimation = args[(int)EIdxAni::nextAni];
-        ani.blendIn       = float(atof(args[(int)EIdxAni::blendIn].c_str()));
-        ani.blendOut      = float(atof(args[(int)EIdxAni::blendOut].c_str()));
+    LogInfo() << "Args: " << args;
 
-        ani.ascName = args[(int)EIdxAni::ASC_Name];
-        ani.aniReversed = args[(int)EIdxAni::aniDir] == "R";
-        ani.startFrame = atoi(args[(int)EIdxAni::startFrame].c_str());
-        ani.endFrame = atoi(args[(int)EIdxAni::endFrame].c_str());
+    Animation ani;
+    ani.animationName = args[(int)EIdxAni::name];
+    ani.layer         = atoi(args[(int)EIdxAni::layer].c_str());
+    ani.nextAnimation = args[(int)EIdxAni::nextAni];
+    ani.blendIn       = float(atof(args[(int)EIdxAni::blendIn].c_str()));
+    ani.blendOut      = float(atof(args[(int)EIdxAni::blendOut].c_str()));
 
-        ani.flags = 0;
-        if (args[(int)EIdxAni::flags].find('m') != std::string::npos)
-            ani.flags |= Animation::MoveObject;
+    ani.ascName = args[(int)EIdxAni::ASC_Name];
+    ani.aniReversed = args[(int)EIdxAni::aniDir] == "R";
+    ani.startFrame = atoi(args[(int)EIdxAni::startFrame].c_str());
+    ani.endFrame = atoi(args[(int)EIdxAni::endFrame].c_str());
 
-        if (args[(int)EIdxAni::flags].find('r') != std::string::npos)
-            ani.flags |= Animation::RotateObject;
+    ani.flags = 0;
+    if (args[(int)EIdxAni::flags].find('m') != std::string::npos)
+      ani.flags |= Animation::MoveObject;
 
-        if (args[(int)EIdxAni::flags].find('e') != std::string::npos)
-            ani.flags |= Animation::WaitEnd;
+    if (args[(int)EIdxAni::flags].find('r') != std::string::npos)
+      ani.flags |= Animation::RotateObject;
 
-        if (args[(int)EIdxAni::flags].find('f') != std::string::npos)
-            ani.flags |= Animation::Fly;
+    if (args[(int)EIdxAni::flags].find('e') != std::string::npos)
+      ani.flags |= Animation::WaitEnd;
 
-        if (args[(int)EIdxAni::flags].find('i') != std::string::npos)
-            ani.flags |= Animation::Idle;
+    if (args[(int)EIdxAni::flags].find('f') != std::string::npos)
+      ani.flags |= Animation::Fly;
 
-        m_Animations.push_back(ani);
+    if (args[(int)EIdxAni::flags].find('i') != std::string::npos)
+      ani.flags |= Animation::Idle;
+
+    m_Animations.push_back(ani);
     };
 
-    /**
-     * Base node
-     */
-    auto readModel = [&]() {
-        while (parser.getSeek() < parser.getFileSize())
-        {
-            std::string line = parser.readLine(true);
-            std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+  /**
+    * Base node
+    */
+  auto readModel = [&]() {
+    while (parser.getSeek() < parser.getFileSize()) {
+      std::string line = parser.readLine(true);
+      std::transform(line.begin(), line.end(), line.begin(), ::tolower);
 
-            LogInfo() << "MDS-Line: " << line;
+      LogInfo() << "MDS-Line: " << line;
 
-            if ((line.find("//") != std::string::npos) || // Skip comments. These MUST be on their own lines, by definition.
-                (line.find("anienum") != std::string::npos) ||
-                (line.find("aniblend") != std::string::npos) ||
-                (line.find("eventmmstartani") != std::string::npos) ||
-                (line.find("anialias") != std::string::npos) ||
-                (line.find("anicomb") != std::string::npos) ||
-                (line.find("anidisable") != std::string::npos) ||
-                (line.find("meshandtree") != std::string::npos) ||
-                (line.find("registermesh") != std::string::npos) ||
-                (line.find("startmesh") != std::string::npos) ||
-                (line.find('{') != std::string::npos) ||
-                (line.find('}') != std::string::npos)) //break; // There can be only one } per block
-                continue;
-            else if (line.find("ani") != std::string::npos)
-                readAni(line);
-        }
+      if ((line.find("//")              != std::string::npos) || // Skip comments. These MUST be on their own lines, by definition.
+          (line.find("anienum")         != std::string::npos) ||
+          (line.find("aniblend")        != std::string::npos) ||
+          (line.find("eventmmstartani") != std::string::npos) ||
+          (line.find("anialias")        != std::string::npos) ||
+          (line.find("anicomb")         != std::string::npos) ||
+          (line.find("anidisable")      != std::string::npos) ||
+          (line.find("meshandtree")     != std::string::npos) ||
+          (line.find("registermesh")    != std::string::npos) ||
+          (line.find("startmesh")       != std::string::npos) ||
+          (line.find('{')               != std::string::npos) ||
+          (line.find('}')               != std::string::npos)) //break; // There can be only one } per block
+          continue;
+      else if (line.find("ani") != std::string::npos)
+        readAni(line);
+      }
     };
 
-    while (parser.getSeek() < parser.getFileSize())
-    {
-        std::string line = parser.readLine(true);
-        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+  while (parser.getSeek() < parser.getFileSize()) {
+    std::string line = parser.readLine(true);
+    std::transform(line.begin(), line.end(), line.begin(), ::tolower);
 
-        LogInfo() << "MDS-Line: " << line;
+    LogInfo() << "MDS-Line: " << line;
 
-        if (line.find("//") != std::string::npos)
-            continue;  // Skip comments. These MUST be on their own lines, by definition.
-        else if (line.find("model") != std::string::npos)
-            readModel();
+    if (line.find("//") != std::string::npos)
+      continue;  // Skip comments. These MUST be on their own lines, by definition.
+    else if (line.find("model") != std::string::npos)
+      readModel();
     }
-}
+  }

@@ -19,19 +19,18 @@ enum MSID_CHUNK : uint16_t {
   MMID_SOURCE_INFO = 0xE010
   };
 
-zCMorphMesh::zCMorphMesh(const std::string& fileName, const VDFS::FileIndex& fileIndex)
-{
-    std::vector<uint8_t> data;
-    fileIndex.getFileData(fileName, data);
+zCMorphMesh::zCMorphMesh(const std::string& fileName, const VDFS::FileIndex& fileIndex) {
+  std::vector<uint8_t> data;
+  fileIndex.getFileData(fileName, data);
 
-    if(data.empty()) {
-      LogInfo() << "Failed to find morph mesh " << fileName;
-      return;
-      }
+  if(data.empty()) {
+    LogInfo() << "Failed to find morph mesh " << fileName;
+    return;
+    }
 
-    ZenLoad::ZenParser parser(data.data(), data.size());
-    readObjectData(parser);
-}
+  ZenLoad::ZenParser parser(data.data(), data.size());
+  readObjectData(parser);
+  }
 
 /**
 * @brief Reads the mesh-object from the given binary stream

@@ -21,20 +21,18 @@ bool ParserImplASCII::readChunkStart(ZenParser::ChunkHeader& header)
     m_pParser->skipSpaces();
 
     // Early exit if this is a chunk-end or not a chunk header
-    if(m_pParser->m_Data[m_pParser->m_Seek] != '[' || m_pParser->m_Data[m_pParser->m_Seek + 1] == ']')
-    {
+    if(m_pParser->m_Data[m_pParser->m_Seek] != '[' || m_pParser->m_Data[m_pParser->m_Seek + 1] == ']') {
       m_pParser->setSeek(seek);
       return false;
-    }
+      }
 
     size_t tmpSeek = m_pParser->m_Seek;
-    while (m_pParser->m_Data[tmpSeek] != ']')
-    {
-        if (m_pParser->m_Data[tmpSeek] == '\r' || m_pParser->m_Data[tmpSeek] == '\n')
-            throw std::runtime_error("Invalid vob descriptor");
+    while(m_pParser->m_Data[tmpSeek] != ']') {
+      if(m_pParser->m_Data[tmpSeek] == '\r' || m_pParser->m_Data[tmpSeek] == '\n')
+        throw std::runtime_error("Invalid vob descriptor");
 
-        ++tmpSeek;
-    }
+      ++tmpSeek;
+      }
 
     // Parse chunk-header
     char        vobDescStk[256] = {};

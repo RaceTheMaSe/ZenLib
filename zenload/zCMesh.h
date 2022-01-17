@@ -6,221 +6,206 @@
 
 namespace VDFS
 {
-    class FileIndex;
+class FileIndex;
 }
 
 namespace ZenLoad
 {
+  /**
+   * Helper structs for version independend loading of polygon data
+   */
+  template <typename FT>
+  struct polyData1 {
+    int16_t materialIndex{};  // -1 if none
+    int16_t lightmapIndex{};  // -1 if none
+    zTPlane polyPlane;
+    FT flags;
+    uint8_t polyNumVertices{};
+    };
+
+  #pragma pack(push, 1)
+  template <typename FT>
+  struct polyData1Packed {
+    int16_t materialIndex{};  // -1 if none
+    int16_t lightmapIndex{};  // -1 if none
+    zTPlane polyPlane;
+    FT flags;
+    uint8_t polyNumVertices{};
+    };
+  #pragma pack(pop)
+
+  template <typename IT, typename FT>
+  struct polyData2 : public polyData1<FT>
+  {
     /**
-    * Helper structs for version independend loading of polygon data
+    * @brief ugly helper-constructor to get from the specific G1/G2-format to a generic one
     */
-    template <typename FT>
-    struct polyData1
-    {
-        int16_t materialIndex{};  // -1 if none
-        int16_t lightmapIndex{};  // -1 if none
-        zTPlane polyPlane;
-        FT flags;
-        uint8_t polyNumVertices{};
-    };
-
-    #pragma pack(push, 1)
-    template <typename FT>
-    struct polyData1Packed
-    {
-        int16_t materialIndex{};  // -1 if none
-        int16_t lightmapIndex{};  // -1 if none
-        zTPlane polyPlane;
-        FT flags;
-        uint8_t polyNumVertices{};
-    };
-    #pragma pack(pop)
-
-    template <typename IT, typename FT>
-    struct polyData2 : public polyData1<FT>
-    {
-        /**
-        * @brief ugly helper-constructor to get from the specific G1/G2-format to a generic one
-        */
-        template <typename IT2, typename FT2>
-        void from(const polyData2<IT2, FT2>& src)
-        {
-            for (size_t i = 0; i < src.polyNumVertices; i++)
-            {
-                indices[i].VertexIndex = static_cast<IT>(src.indices[i].VertexIndex);
-                indices[i].FeatIndex = src.indices[i].FeatIndex;
-            }
-
-            polyData1<FT>::materialIndex = src.materialIndex;
-            polyData1<FT>::lightmapIndex = src.lightmapIndex;
-            polyData1<FT>::polyPlane = src.polyPlane;
-            polyData1<FT>::polyNumVertices = src.polyNumVertices;
-            polyData1<FT>::flags = src.flags.generify();
+    template <typename IT2, typename FT2>
+    void from(const polyData2<IT2, FT2>& src) {
+      for (size_t i = 0; i < src.polyNumVertices; i++) {
+        indices[i].VertexIndex = static_cast<IT>(src.indices[i].VertexIndex);
+        indices[i].FeatIndex   = src.indices[i].FeatIndex;
         }
+      polyData1<FT>::materialIndex   = src.materialIndex;
+      polyData1<FT>::lightmapIndex   = src.lightmapIndex;
+      polyData1<FT>::polyPlane       = src.polyPlane;
+      polyData1<FT>::polyNumVertices = src.polyNumVertices;
+      polyData1<FT>::flags           = src.flags.generify();
+      }
 
-        polyData2() {
-            memset(&indices, 0, sizeof(indices));
+    polyData2() {
+      memset(&indices, 0, sizeof(indices));
+      }
+
+    struct Index {
+      IT       VertexIndex;
+      uint32_t FeatIndex;
+      };
+
+#pragma pack(push, 1)
+    struct IndexPacked {
+      IT       VertexIndex;
+      uint32_t FeatIndex;
+      };
+#pragma pack(pop)
+
+    void read(const uint8_t* _data) {
+      const void*& data = (const void*&)_data;
+      Utils::unalignedRead(polyData1<FT>::materialIndex  , data);
+      Utils::unalignedRead(polyData1<FT>::lightmapIndex  , data);
+      Utils::unalignedRead(polyData1<FT>::polyPlane      , data);
+      Utils::unalignedRead(polyData1<FT>::flags          , data);
+      Utils::unalignedRead(polyData1<FT>::polyNumVertices, data);
+      for (int i = 0; i < polyData1<FT>::polyNumVertices; i++) {
+        Utils::unalignedRead(indices[i].VertexIndex      , data);
+        Utils::unalignedRead(indices[i].FeatIndex        , data);
         }
+      }
 
-        struct Index
-        {
-            IT VertexIndex;
-            uint32_t FeatIndex;
-        };
+    Index indices[255];
+  };
 
-    #pragma pack(push, 1)
-        struct IndexPacked
-        {
-            IT VertexIndex;
-            uint32_t FeatIndex;
-        };
-    #pragma pack(pop)
+class ZenParser;
 
-        void read(const uint8_t* _data)
-        {
-            const void*& data = (const void*&)_data;
-            Utils::unalignedRead(polyData1<FT>::materialIndex, data);
-            Utils::unalignedRead(polyData1<FT>::lightmapIndex, data);
-            Utils::unalignedRead(polyData1<FT>::polyPlane, data);
-            Utils::unalignedRead(polyData1<FT>::flags, data);
-            Utils::unalignedRead(polyData1<FT>::polyNumVertices, data);
+class zCMesh  {
+  public:
+    zCMesh() = default;
 
-            for (int i = 0; i < polyData1<FT>::polyNumVertices; i++)
-            {
-                Utils::unalignedRead(indices[i].VertexIndex, data);
-                Utils::unalignedRead(indices[i].FeatIndex, data);
-            }
-        }
+    /**
+       * @brief Loads the mesh from the given VDF-Archive
+       */
+    zCMesh(const std::string& fileName, VDFS::FileIndex& fileIndex);
 
-        Index indices[255];
-    };
+    /**
+       * @brief Reads the mesh-object from the given binary stream
+       * @param parser Parser reference
+       * @param skipPolys These polygons will be skipped while loading. These need to be ordered! (Used to load world witout LOD in G1)
+       * @param forceG132bitIndices Loads all indices as 32-bit, even though the ZEN may come from Gothic 1
+       */
+    void readObjectData(ZenParser& parser, const std::vector<size_t>& skipPolys = std::vector<size_t>(),
+                        bool forceG132bitIndices = false);
 
-    class ZenParser;
-    class zCMesh
-    {
-    public:
-        zCMesh()=default;
+    /**
+       * Simply skips all data found here
+       * @param parser Parser reference
+       */
+    static void skip(ZenParser& parser);
 
-        /**
-     * @brief Loads the mesh from the given VDF-Archive
-     */
-        zCMesh(const std::string& fileName, VDFS::FileIndex& fileIndex);
+    /**
+       * @brief Creates packed submesh-data
+       */
+    void packMesh(PackedMesh& mesh, float scale, bool removeDoubles);
 
-        /**
-     * @brief Reads the mesh-object from the given binary stream
-     * @param parser ZenParser object
-     * @param skipPolys These polygons will be skipped while loading. These need to be ordered! (Used to load world witout LOD in G1)
-     * @param forceG132bitIndices Loads all indices as 32-bit, even though the ZEN may come from Gothic 1
-     */
-        void readObjectData(ZenParser& parser, const std::vector<size_t>& skipPolys = std::vector<size_t>(),
-                            bool forceG132bitIndices = false);
-
-        /**
-     * Simply skips all data found here
-     * @param parser ZenParser object
-     */
-        static void skip(ZenParser& parser);
-
-        /**
-      * @brief Creates packed submesh-data
+    /**
+      @ brief returns the vector of vertex-positions
       */
-        void packMesh(PackedMesh& mesh, float scale, bool removeDoubles);
+    const std::vector<ZMath::float3>& getVertices() const { return m_Vertices; }
 
-        /**
-    @ brief returns the vector of vertex-positions
-    */
-        const std::vector<ZMath::float3>& getVertices() const { return m_Vertices; }
+    /**
+      @ brief returns the vector of features
+      */
+    const std::vector<zTMSH_FeatureChunk>& getFeatures() const { return m_Features; }
 
-        /**
-    @ brief returns the vector of features
-    */
-        const std::vector<zTMSH_FeatureChunk>& getFeatures() const { return m_Features; }
+    /**
+       * @brief returns the vector of triangle-indices
+       */
+    const std::vector<uint32_t>& getIndices() const { return m_Indices; }
 
-        /**
-     * @brief returns the vector of triangle-indices
-     */
-        const std::vector<uint32_t>& getIndices() const { return m_Indices; }
+    /**
+       * @brief returns the vector of triangle-indices
+       */
+    const std::vector<uint32_t>& getFeatureIndices() const { return m_FeatureIndices; }
 
-        /**
-     * @brief returns the vector of triangle-indices
-     */
-        const std::vector<uint32_t>& getFeatureIndices() const { return m_FeatureIndices; }
+    /**
+       * @brief returns the vector of triangle-material-indices
+       */
+    const std::vector<int16_t>& getTriangleMaterialIndices() const { return m_TriangleMaterialIndices; }
 
-        /**
-     * @brief returns the vector of triangle-material-indices
-     */
-        const std::vector<int16_t>& getTriangleMaterialIndices() const { return m_TriangleMaterialIndices; }
+    /**
+      * @brief returns the vector of triangle-material-indices
+      */
+    const std::vector<int16_t>& getTriangleLightmapIndices() const { return m_TriangleLightmapIndices; }
 
-        /**
-    * @brief returns the vector of triangle-material-indices
-    */
-        const std::vector<int16_t>& getTriangleLightmapIndices() const { return m_TriangleLightmapIndices; }
+    /**
+       * @brief returns the vector of the materials used by this mesh
+       */
+    const std::vector<zCMaterialData>& getMaterials() const { return m_Materials; }
 
-        /**
-     * @brief returns the vector of the materials used by this mesh
-     */
-        const std::vector<zCMaterialData>& getMaterials() const { return m_Materials; }
+    /**
+       * @brief getter for the boudingboxes
+       */
+    void getBoundingBox(ZMath::float3& min, ZMath::float3& max) const
+      {
+      min = m_BBMin;
+      max = m_BBMax;
+      }
 
-        /**
-     * @brief getter for the boudingboxes
-     */
-        void getBoundingBox(ZMath::float3& min, ZMath::float3& max) const
-        {
-            min = m_BBMin;
-            max = m_BBMax;
-        }
+  private:
+    /**
+       * @brief vector of vertex-positions for this mesh
+       */
+    std::vector<ZMath::float3> m_Vertices;
 
-    private:
-        /**
-     * @brief vector of vertex-positions for this mesh
-     */
-        std::vector<ZMath::float3> m_Vertices;
+    /**
+       * @brief Featues for the vertices with the corresponding index
+       */
+    std::vector<zTMSH_FeatureChunk> m_Features;
 
-        /** 
-     * @brief Featues for the vertices with the corresponding index
-     */
-        std::vector<zTMSH_FeatureChunk> m_Features;
+    /**
+       * @brief indices for the triangles of the mesh
+       */
+    std::vector<uint32_t> m_Indices;
 
-        /** 
-     * @brief Featues for the vertices with the corresponding index
-     */
-        std::vector<zTMSH_FeatureChunk> m_AllFeatures;
+    /**
+      * @brief indices for the triangles of the mesh
+      */
+    std::vector<uint32_t> m_FeatureIndices;
 
-        /**
-     * @brief indices for the triangles of the mesh
-     */
-        std::vector<uint32_t> m_Indices;
+    /**
+       * @brief Triangles of the current mesh, containing flags
+       */
+    std::vector<WorldTriangle> m_Triangles;
 
-        /**
-    * @brief indices for the triangles of the mesh
-    */
-        std::vector<uint32_t> m_FeatureIndices;
+    /**
+       * @brief Textures for the triangles. Divide index-position by 3 to get the
+       * corresponding material-info
+       */
+    std::vector<int16_t> m_TriangleMaterialIndices;
 
-        /**
-     * @brief Textures for the triangles. Divide index-position by 3 to get the 
-     * corresponding material-info 
-     */
-        std::vector<int16_t> m_TriangleMaterialIndices;
+    /**
+       * @brief Index of the lightmap used by the triangles in order. -1 of no lightmap registered.
+       */
+    std::vector<int16_t> m_TriangleLightmapIndices;
 
-        /**
-     * @brief Index of the lightmap used by the triangles in order. -1 of no lightmap registered.
-     */
-        std::vector<int16_t> m_TriangleLightmapIndices;
+    /**
+       * @brief All materials used by this mesh
+       */
+    std::vector<zCMaterialData> m_Materials;
 
-        /**
-     * @brief All materials used by this mesh
-     */
-        std::vector<zCMaterialData> m_Materials;
-
-        /**
-     * @brief Triangles of the current mesh, containing flags
-     */
-        std::vector<WorldTriangle> m_Triangles;
-
-        /**
-     * @brief Bounding-box of this mesh
-     */
-        ZMath::float3 m_BBMin={};
-        ZMath::float3 m_BBMax={};
-    };
+    /**
+       * @brief Bounding-box of this mesh
+       */
+    ZMath::float3 m_BBMin;
+    ZMath::float3 m_BBMax;
+  };
 }  // namespace ZenLoad

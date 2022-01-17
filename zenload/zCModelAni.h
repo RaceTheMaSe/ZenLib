@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -12,6 +13,7 @@ namespace VDFS
 
 namespace ZenLoad
 {
+    class ZenParser;
     class zCModelAni
     {
     public:
@@ -30,6 +32,27 @@ namespace ZenLoad
             float prob;
 
             void load(ZenParser& parser);
+        };
+
+        struct zCModelAniHeader
+        {
+            uint16_t version = 0;
+
+            std::string aniName;
+
+            uint32_t layer = 0;
+            uint32_t numFrames = 0;
+            uint32_t numNodes = 0;
+            float fpsRate = 0;
+            float fpsRateSource = 0;
+            float samplePosRangeMin = 0;
+            float samplePosScaler = 0;
+
+            ZMath::float3 aniBBox[2] = {};
+
+            std::string nextAniName;
+
+            uint32_t nodeChecksum = 0;
         };
 
         struct ModelAniHeader

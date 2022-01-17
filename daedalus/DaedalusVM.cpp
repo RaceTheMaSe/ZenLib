@@ -90,8 +90,12 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         pushInt(a > b ? 1 : 0);
         break;
         }
-
-      case EParOp_AssignFunc:
+      case EParOp_AssignFunc: {
+        auto&   a = popIntVar();
+        int32_t b = popDataValue();
+        a = b;
+        break;
+        }
       case EParOp_AssignInt: {
         auto&   a = popIntVar();
         int32_t b = popDataValue();
@@ -165,7 +169,6 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
       case EParOp_AssignDivide: {
         int32_t& v = popIntVar();
         int32_t  b = popDataValue();
-        b = popDataValue();
         if(b==0)
           terminateScript<BadMath>();
         v /= b;
@@ -186,16 +189,29 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
       case EParOp_Ret:
         return;
       case EParOp_Call: {
-        auto currentInstance = m_Instance;
-
+        std::function<void(DaedalusVM&)>* f=nullptr;
         {
-        CallStackFrame frame(*this, op.address, CallStackFrame::Address);
+          auto it = m_InternalsByIndex.find(op.address);
+          if(it!=m_InternalsByIndex.end())
+            f = &it->second;
+        }
+
+        auto currentInstance = m_Instance;
+        
         if(initScripts)
           m_NumFunctionCalls++;
-        eval(size_t(op.address),initScripts,loadProgress);
+
+        if(f!=nullptr && *f) {
+          CallStackFrame frame(*this, op.address, CallStackFrame::Address);
+          (*f)(*this);
+          m_NumFunctionCalls++;
+          } else {
+          CallStackFrame frame(*this, op.address, CallStackFrame::Address);
+          eval(size_t(op.address),initScripts,loadProgress);
+          }
+
         if(initScripts)
           loadProgress(m_NumFunctionCalls);
-        }
 
         m_Instance = currentInstance;
         break;
@@ -295,6 +311,17 @@ void DaedalusVM::registerExternalFunction(const char* symName, const std::functi
       m_ExternalsByIndex.resize(s+1);
     m_ExternalsByIndex[s] = fn;
     }
+  }
+
+void DaedalusVM::registerInternalFunction(const char* symName, const std::function<void (DaedalusVM&)>& fn) {
+  if(m_DATFile.hasSymbolName(symName)) {
+    auto& s = m_DATFile.getSymbolByName(symName);
+    registerInternalFunction(s.address,fn);
+    }
+  }
+
+void DaedalusVM::registerInternalFunction(size_t address, const std::function<void (DaedalusVM&)>& fn) {
+  m_InternalsByIndex[address] = fn;
   }
 
 void DaedalusVM::unregisterExternalFunction(const char* symName) {
@@ -409,7 +436,7 @@ ZString DaedalusVM::popString() {
   return top.s;
   }
 
-int32_t &DaedalusVM::popIntVar() {
+int32_t& DaedalusVM::popIntVar() {
   static int32_t err=0;
   if(m_Stack.empty())
     return err;
@@ -423,7 +450,7 @@ int32_t &DaedalusVM::popIntVar() {
   return err;
   }
 
-float &DaedalusVM::popFloatVar() {
+float& DaedalusVM::popFloatVar() {
   static float err=0;
   if(m_Stack.empty())
     return err;
@@ -437,7 +464,7 @@ float &DaedalusVM::popFloatVar() {
   return err;
   }
 
-ZString &DaedalusVM::popStringVar() {
+ZString& DaedalusVM::popStringVar() {
   static ZString err;
   if(m_Stack.empty())
     return err;
@@ -587,7 +614,148 @@ PARSymbol &DaedalusVM::globalItem() {
   return m_DATFile.getSymbolByIndex(m_ItemId);
   }
 
-int32_t DaedalusVM::runFunctionBySymIndex(size_t symIdx, bool initScript, std::function<void(size_t)> f) {
+void DaedalusVM::disAsm(size_t symIdx) {
+  auto& functionSymbol = getDATFile().getSymbolByIndex(symIdx);
+  auto address         = functionSymbol.address;
+  if(address == 0)
+    return;
+
+  LogInfo() << "[" << functionSymbol.name <<"]";
+  size_t PC = address;
+  while(true) {
+    const PARStackOpCode& op = nextInstruction(PC);
+    switch (op.op) {
+      case EParOp_Add:
+        LogInfo() << "EParOp_Add";
+        break;
+      case EParOp_Subract:
+        LogInfo() << "EParOp_Subract";
+        break;
+      case EParOp_Multiply:
+        LogInfo() << "EParOp_Multiply";
+        break;
+      case EParOp_Divide:
+        LogInfo() << "EParOp_Divide";
+        break;
+      case EParOp_Mod:
+        LogInfo() << "EParOp_Mod";
+        break;
+      case EParOp_BinOr:
+        LogInfo() << "EParOp_BinOr";
+        break;
+      case EParOp_BinAnd:
+        LogInfo() << "EParOp_BinAnd";
+        break;
+      case EParOp_Less:
+        LogInfo() << "EParOp_Less";
+        break;
+      case EParOp_Greater:
+        LogInfo() << "EParOp_Greater";
+        break;
+      case EParOp_AssignFunc:
+        LogInfo() << "EParOp_AssignFunc";
+        break;
+      case EParOp_AssignInt:
+        LogInfo() << "EParOp_AssignInt";
+        break;
+      case EParOp_LogOr:
+        LogInfo() << "EParOp_LogOr";
+        break;
+      case EParOp_LogAnd:
+        LogInfo() << "EParOp_LogAnd";
+        break;
+      case EParOp_ShiftLeft:
+        LogInfo() << "EParOp_ShiftLeft";
+        break;
+      case EParOp_ShiftRight:
+        LogInfo() << "EParOp_ShiftRight";
+        break;
+      case EParOp_LessOrEqual:
+        LogInfo() << "EParOp_LessOrEqual";
+        break;
+      case EParOp_Equal:
+        LogInfo() << "EParOp_Equal";
+        break;
+      case EParOp_NotEqual:
+        LogInfo() << "EParOp_NotEqual";
+        break;
+      case EParOp_GreaterOrEqual:
+        LogInfo() << "EParOp_GreaterOrEqual";
+        break;
+      case EParOp_AssignAdd:
+        LogInfo() << "EParOp_AssignAdd";
+        break;
+      case EParOp_AssignSubtract:
+        LogInfo() << "EParOp_AssignSubtract";
+        break;
+      case EParOp_AssignMultiply:
+        LogInfo() << "EParOp_AssignMultiply";
+        break;
+      case EParOp_AssignDivide:
+        LogInfo() << "EParOp_AssignDivide";
+        break;
+      case EParOp_Plus:
+        LogInfo() << "EParOp_Plus";
+        break;
+      case EParOp_Minus:
+        LogInfo() << "EParOp_Minus";
+        break;
+      case EParOp_Not:
+        LogInfo() << "EParOp_Not";
+        break;
+      case EParOp_Negate:
+        LogInfo() << "EParOp_Negate";
+        break;
+      case EParOp_Ret:
+        LogInfo() << "EParOp_Ret";
+        return;
+      case EParOp_Call:
+        LogInfo() << "EParOp_Call " << op.address;
+        break;
+      case EParOp_CallExternal:
+        LogInfo() << "EParOp_CallExternal " << op.symbol;
+        break;
+      case EParOp_PushInt:
+        LogInfo() << "EParOp_PushInt " << op.value;
+        break;
+      case EParOp_PushVar:
+        LogInfo() << "EParOp_PushVar " << op.symbol;
+        break;
+      case EParOp_PushInstance:
+        LogInfo() << "EParOp_PushInstance " << op.symbol;
+        break;
+      case EParOp_AssignString:
+        LogInfo() << "EParOp_AssignString";
+        break;
+      case EParOp_AssignStringRef:
+        LogError() << "EParOp_AssignStringRef not implemented!";
+        break;
+      case EParOp_AssignFloat:
+        LogInfo() << "EParOp_AssignFloat";
+        break;
+      case EParOp_AssignInstance:
+        LogInfo() << "EParOp_AssignInstance";
+        break;
+      case EParOp_Jump:
+        LogInfo() << "EParOp_Jump " << op.address;
+        break;
+      case EParOp_JumpIf:
+        LogInfo() << "EParOp_JumpIf " << op.address;
+        break;
+      case EParOp_SetInstance:
+        LogInfo() << "EParOp_SetInstance " << op.symbol;
+        break;
+      case EParOp_PushArrayVar:
+        LogInfo() << "EParOp_PushArrayVar " << op.symbol << " " << op.index;
+        break;
+      default:
+        LogInfo() << "[bad instr]";
+        return;
+      }
+    }
+  }
+
+int32_t DaedalusVM::runFunctionBySymIndex(size_t symIdx, bool initScript, std::function<void(size_t)> progressFunc) {
   if(symIdx==size_t(-1))
     return 0;
 
@@ -597,10 +765,21 @@ int32_t DaedalusVM::runFunctionBySymIndex(size_t symIdx, bool initScript, std::f
   if(frame.address == 0) {
     return -1;
     }
-  // Execute the instructions
+  std::function<void(DaedalusVM&)>* f=nullptr;
+  {
+    auto it = m_InternalsByIndex.find(frame.address);
+    if(it!=m_InternalsByIndex.end())
+      f = &it->second;
+  }
   if(initScript)
     m_NumFunctionCalls=0;
-  eval(frame.address,initScript,f);
+
+  // Execute the instructions
+  if(f==nullptr) {
+    eval(frame.address,initScript,progressFunc);
+    } else {
+    (*f)(*this);
+    }
   hasRet = frame.hasReturnVal;
   }
 

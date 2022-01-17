@@ -275,11 +275,6 @@ public:
   bool readBoolASCII();
 
   /**
-     * @brief returns whether the given string is a number
-     */
-  bool isNumber(const std::string& expr);
-
-  /**
      * @brief returns the current implementatio
      */
   ParserImpl* getImpl() { return m_pParserImpl; }
@@ -310,10 +305,8 @@ public:
     * @brief Reads one structure of type T. Watch for alignment!
     */
   template <typename T>
-  void readStructure(T& s)
-    {
-    if (m_Seek + sizeof(T) <= m_DataSize)
-      {
+  void readStructure(T& s) {
+    if(m_Seek + sizeof(T) <= m_DataSize) {
       void* _s = (void*)&s;
       memcpy(_s, &m_Data[m_Seek], sizeof(T));
       m_Seek += sizeof(T);
@@ -359,7 +352,7 @@ private:
   /**
    * @brief Implementation this archive usese
    */
-  ParserImpl* m_pParserImpl{};
+  ParserImpl*              m_pParserImpl = nullptr;
 
   /**
    * @brief Data currently loaded and the current stream position
@@ -372,7 +365,7 @@ private:
   /**
    * @brief ZEN-Header of the loaded file
    */
-  ZenHeader                m_Header;
+  ZenHeader                m_Header = {};
 
   /**
     * @brief The world mesh. Only non-null if the ZEN had one. (BinSave don't have a worldmesh)

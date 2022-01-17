@@ -208,7 +208,6 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
             {
                 // Read how many vertices we have in this chunk
                 uint32_t numVertices = parser.readBinaryDWord();
-                m_Vertices.clear();
 
                 // Read vertex data and emplace into m_Vertices
                 m_Vertices.resize(numVertices);
@@ -267,12 +266,15 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                     indicesSize = sizeof(polyData2<uint32_t, PolyFlags1_08k>::IndexPacked);
                 }
 
-                // Preallocate some memory for the triangles
-                // Note: There will be some more triangles, since not all polys have 3 vertices. Times 2 could be a little bit too hugh, though.
-                // m_Triangles.reserve(numPolys * 2);
-
                 // Iterate throuh every poly
-                for (auto i = size_t{0}; i < numPolys; i++)
+                m_Triangles.reserve(numPolys);
+                m_TriangleMaterialIndices.reserve(numPolys);
+                m_TriangleLightmapIndices.reserve(numPolys);
+
+                m_Indices.reserve(numPolys*3);
+                m_FeatureIndices.reserve(numPolys*3);
+
+                for(size_t i=0; i < numPolys; i++)
                 {
                     // Convert to a generic version
                     polyData2<uint32_t, PolyFlags> p;

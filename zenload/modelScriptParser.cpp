@@ -72,6 +72,10 @@ MdsParserTxt::TokType MdsParserTxt::nextTok(std::string& buf) {
         const char cur = zen.readChar();
         if(cur=='\"' || cur==')') // NOTE: closing bracket is for mal-formed input where the second apostrophe is missing - *eventSFXGrnd	(72	"Turn	) in Wolf.mds
           break;
+        if(cur=='\r' || cur=='\n') { // NOTE: second approach working around this also merged...don't know if counterproductive
+          // Invalid syntax
+          break; // G1 wolf.mds is missing closing " - need to workaround it
+          }
         buf.push_back(cur);
         }
       for(size_t i=0;i<buf.size();) { // sanitize input

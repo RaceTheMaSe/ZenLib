@@ -19,14 +19,6 @@
 
 using namespace ZenLoad;
 
-static void THROW(const char* msg) {
-#ifdef __ANDROID__
-  LogError() << msg;
-#else
-  throw std::runtime_error(msg);
-#endif
-  }
-
 /**
  * @brief reads a zen from a vdf
  */
@@ -40,14 +32,6 @@ ZenParser::ZenParser(const std::string& file, const VDFS::FileIndex& vdfs) {
  * @brief reads a zen from memory
  */
 ZenParser::ZenParser(const uint8_t* data, size_t size) : m_Data(data), m_DataSize(size) { }
-
-/**
-* @brief returns whether the given string is a number
-*/
-bool ZenParser::isNumber(const std::string& expr)
-{
-    return !expr.empty() && std::find_if(expr.begin(), expr.end(), [](unsigned char c) { return !std::isdigit(c); }) == expr.end();
-}
 
 /**
 * @brief Reads the main ZEN-Header
@@ -74,10 +58,10 @@ void ZenParser::skipHeader()
 */
 void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   if(!skipString("ZenGin Archive"))
-    THROW("Not a valid format");
+    throw std::runtime_error("Not a valid format");
 
   if(!skipString("ver"))
-    THROW("Not a valid header");
+    throw std::runtime_error("Not a valid header");
 
   // Version should be always 1...
   header.version = atoi(readLine(true).c_str()); // changed from readIntASCII(); to have proper advancing in ascii zen
@@ -91,7 +75,7 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
 
   // Read string of the format "savegame b", where b is 0 or 1
   if(!skipString("saveGame"))
-    THROW("Unsupported file format");
+    throw std::runtime_error("Unsupported file format");
   header.saveGame = readBoolASCII();
 
   // Read possible date
@@ -107,7 +91,7 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   if(header.version!=0) { // version 0 continues with object count,
     // Reached the end of the main header
     if(!skipString("END"))
-      THROW("No END in header(1)");
+      throw("No END in header(1)");
 
     // Continue with the implementationspecific header
     skipSpaces();
@@ -126,7 +110,7 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
     impl = new ParserImplBinSafe(this);
     }
   else {
-    THROW("Unsupported file format");
+    throw std::runtime_error("Unsupported file format");
     }
 
   impl->readImplHeader();
@@ -222,7 +206,7 @@ bool ZenParser::readBoolASCII()
     skipSpaces();
     bool retVal = false;
     if (m_Data[m_Seek] != '0' && m_Data[m_Seek] != '1')
-        THROW("Value is not a bool"); else
+        throw std::runtime_error("Value is not a bool"); else
         retVal = m_Data[m_Seek] == '0' ? false : true;
 
     ++m_Seek;
@@ -429,7 +413,7 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
 
   bool readSuccess=false;
   if(worldHeader.classId!=ZenParser::zCWorld)
-    THROW("Expected oCWorld:zCWorld-Chunk not found!");
+    throw std::runtime_error("Expected oCWorld:zCWorld-Chunk not found!");
 
   bool isUncompressZen=true;
   while(!readChunkEnd()) {

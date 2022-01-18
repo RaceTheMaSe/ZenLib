@@ -266,37 +266,37 @@ struct PARSymbol {
       uint32_t type : 4;    // EParType_*
       uint32_t flags : 6;   // EParFlag_*
       uint32_t space : 1;
-      uint32_t reserved : 9;
+      uint32_t reserved : 9; // unused / alignment
       } elemProps;
 
     struct
       {
       uint32_t value : 19;  // Value:19, Reserved:13
-      uint32_t reserved : 13;
+      uint32_t reserved : 13; // unused / alignment
       } fileIndex;
 
     struct
       {
       uint32_t value : 19;  // Value:19, Reserved:13
-      uint32_t reserved : 13;
+      uint32_t reserved : 13; // unused / alignment
       } lineStart;
 
     struct
       {
       uint32_t value : 19;  // Value:19, Reserved:13
-      uint32_t reserved : 13;
+      uint32_t reserved : 13; // unused / alignment
       } lineCount;
 
     struct
       {
       uint32_t value : 24;  // Value:24, Reserved:8
-      uint32_t reserved : 8;
+      uint32_t reserved : 8; // unused / alignment
       } charStart;
 
     struct
       {
       uint32_t value : 24;  // Value:24, Reserved:8
-      uint32_t reserved : 8;
+      uint32_t reserved : 8; // unused / alignment
       } charCount;
     };
 

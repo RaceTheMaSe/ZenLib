@@ -80,8 +80,8 @@ void zCModelMeshLib::loadMDM(ZenParser& parser) {
       case MLID_MDM_SOURCE: {
         mdm.c[0].fromABGR8(parser.readBinaryDWord());
         mdm.c[1].fromABGR8(parser.readBinaryDWord());
-        mdm.c[1].fromABGR8(parser.readBinaryDWord());
-        mdm.c[1].fromABGR8(parser.readBinaryDWord());
+        mdm.c[2].fromABGR8(parser.readBinaryDWord());
+        mdm.c[3].fromABGR8(parser.readBinaryDWord());
         mdm.source = parser.readString();
         // TODO: Implement MDM-Conversion - data is read but unused
         parser.setSeek(chunkEnd);  // Skip chunk
@@ -187,8 +187,8 @@ void zCModelMeshLib::loadMDH(ZenParser& parser) {
       case MLID_MDH_SOURCE: {
         mdh.c[0].fromABGR8(parser.readBinaryDWord());
         mdh.c[1].fromABGR8(parser.readBinaryDWord());
-        mdh.c[1].fromABGR8(parser.readBinaryDWord());
-        mdh.c[1].fromABGR8(parser.readBinaryDWord());
+        mdh.c[2].fromABGR8(parser.readBinaryDWord());
+        mdh.c[3].fromABGR8(parser.readBinaryDWord());
         mdh.source = parser.readString();
         // TODO: Implement MDH-Conversion - data is read but unused
         parser.setSeek(chunkEnd);  // Skip chunk

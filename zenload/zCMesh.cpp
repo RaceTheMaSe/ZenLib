@@ -98,7 +98,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
       case MSID_BBOX3D: {
         ZMath::float3 min, max;
         zMAT3 m3,m4;
-        ZMath::Matrix m; // dont know what for
+        ZMath::Matrix m; // OBB
         parser.readStructure(m3); // bounding box data with center in third row
         parser.readStructure(m4); // quite sure that its a 3x3 matrix, identity matrix in barrier mesh
         parser.readStructure(min);

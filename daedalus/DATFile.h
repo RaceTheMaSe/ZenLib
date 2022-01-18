@@ -380,7 +380,7 @@ struct PARSymbol {
       else if (baseAddr == nullptr) {
         LogError() << "DaedalusVM: base address of C_Class is nullptr: " << name;
         static T empty={};
-        return empty; // FIXME: this comes up often, so assuming that when functions get called with null objects, return zero as otherwise this messes up script logic massively - testcase: npc nek gives deadxp, because ZS_DEAD "(C_NpcIsHuman(other) && other.aivar[AIV_PARTYMEMBER])" returns some garbage value for AIV_PARTYMEMBER called with "instance other" == nullptr
+        return empty; // FIXME: this comes up often, so assuming that when functions get called with null objects, return zero as otherwise this messes up script logic massively - testcase: npc nek gives deadxp on start of g1, because ZS_DEAD "(C_NpcIsHuman(other) && other.aivar[AIV_PARTYMEMBER])" returns some garbage value for AIV_PARTYMEMBER called with "instance other" == nullptr
         }
       else if (idx >= classMemberArraySize) {
         warnIndexOutOfBounds(idx, classMemberArraySize);

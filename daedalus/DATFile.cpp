@@ -368,7 +368,7 @@ const float& PARSymbol::getFloat(size_t idx, void* baseAddr) const {
   return getValue<float>(idx, baseAddr);
   }
 
-#if (defined(__GNUC__) && !defined(ANDROID) && !defined(__clang__)) // FIXME: crude way of getting it to compile with ndk clang 9 for android where __GNUC__ is also defined, gcc 9/10 and clang 10+ for desktop
+#if (defined(__GNUC__) && !defined(ANDROID) && !defined(__clang__)) // FIXME: crude way of getting it to compile with ndk clang 9 for android where __GNUC__ is also defined, gcc 9/10 and clang 10-14 for desktop
 template <>
 DataContainer<int32_t>& PARSymbol::getDataContainer() {
   return this->intData;

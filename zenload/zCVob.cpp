@@ -74,7 +74,7 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
   bool hasEventManObject       = false;
 
   if(info.pack) {
-    packedVobData pd{};
+    packedVobData pd = {};
     parser.getImpl()->readEntry("", &pd, sizeof(pd));
 
     info.bbox[0]               = pd.bbox3DWS[0];

@@ -79,10 +79,8 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   header.saveGame = readBoolASCII();
 
   // Read possible date
-  if(skipString("date")) {
-    header.date = readString() + " ";
-    header.date += readString();
-    }
+  if(skipString("date"))
+    header.date = readLine();
 
   // Skip possible user
   if(skipString("user"))

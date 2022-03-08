@@ -118,50 +118,26 @@ void DATFile::readStack(ZenLoad::ZenParser& input) {
     s.opSize = sizeof(uint8_t);
 
     switch(s.op) {
-      case EParOp_Call:
-        s.address = int32_t(input.readBinaryDWord());
-        s.opSize += sizeof(int32_t);
-        break;
-
-      case EParOp_CallExternal:
-        s.symbol = int32_t(input.readBinaryDWord());
-        s.opSize += sizeof(int32_t);
-        break;
-
-      case EParOp_PushInt:
+      case EParTok_PushInt:
         s.value = int32_t(input.readBinaryDWord());
         s.opSize += sizeof(int32_t);
         break;
-
-      case EParOp_PushVar:
-        // s.symbol = int32_t(input.readBinaryDWord());
-        // s.opSize += sizeof(int32_t);
-        // break;
-
-      case EParOp_PushInstance:
-        s.symbol = int32_t(input.readBinaryDWord());
-        s.opSize += sizeof(int32_t);
-        break;
-
-      case EParOp_Jump:
-        // s.address = int32_t(input.readBinaryDWord());
-        // s.opSize += sizeof(int32_t);
-        // break;
-
-      case EParOp_JumpIf:
+      case EParTok_Call:
+      case EParTok_Jump:
+      case EParTok_JumpIf:
         s.address = int32_t(input.readBinaryDWord());
         s.opSize += sizeof(int32_t);
         break;
-
-      case EParOp_SetInstance:
+      case EParTok_CallExternal:
+      case EParTok_PushVar:
+      case EParTok_PushInstance:
+      case EParTok_SetInstance:
         s.symbol = int32_t(input.readBinaryDWord());
         s.opSize += sizeof(int32_t);
         break;
-
-      case EParOp_PushArrayVar:
+      case EParTok_PushArrayVar:
         s.symbol = int32_t(input.readBinaryDWord());
         s.opSize += sizeof(int32_t);
-
         s.index = input.readBinaryByte();
         s.opSize += sizeof(uint8_t);
         break;
@@ -308,7 +284,7 @@ const PARStackOpCode& DATFile::getStackOpCode(size_t pc) {
   if(pc<pcCode.size())
     return *pcCode[pc];
   static PARStackOpCode s={};
-  s.op=EParOp_Ret;
+  s.op=EParTok_Ret;
   return s;
   }
 

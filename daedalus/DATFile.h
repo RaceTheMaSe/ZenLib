@@ -130,70 +130,75 @@ enum EParType {
 
 enum EParOp : uint8_t
   {
-  EParOp_Add = 0,              // a + b
-  EParOp_Subract = 1,          // a - b
-  EParOp_Multiply = 2,         // a * b
-  EParOp_Divide = 3,           // a / b
-  EParOp_Mod = 4,              // a % b
-  EParOp_BinOr = 5,            // a | b
-  EParOp_BinAnd = 6,           // a & b
-  EParOp_Less = 7,             // a < b
-  EParOp_Greater = 8,          // a > b
-  EParOp_AssignInt = 9,        // a = b
-  EParOp_LogOr = 11,           // a || b
-  EParOp_LogAnd = 12,          // a && b
-  EParOp_ShiftLeft = 13,       // a << b
-  EParOp_ShiftRight = 14,      // a >> b
-  EParOp_LessOrEqual = 15,     // a <= b
-  EParOp_Equal = 16,           // a == b
-  EParOp_NotEqual = 17,        // a != b
-  EParOp_GreaterOrEqual = 18,  // a >= b
-  EParOp_AssignAdd = 19,       // a += b (a = a + b)
-  EParOp_AssignSubtract = 20,  // a -= b (a = a - b)
-  EParOp_AssignMultiply = 21,  // a *= b (a = a * b)
-  EParOp_AssignDivide = 22,    // a /= b (a = a / b)
-  EParOp_Plus = 30,            // +a
-  EParOp_Minus = 31,           // -a
-  EParOp_Not = 32,             // !a
-  EParOp_Negate = 33,          // ~a
-  //  EParOp_LeftBracket     = 40,    // '('
-  //  EParOp_RightBracket    = 41,    // ')'
-  //  EParOp_Semicolon       = 42,    // ';'
-  //  EParOp_Comma           = 43,    // ','
-  //  EParOp_CurlyBracket    = 44,    // '{', '}'
-  //  EParOp_None            = 45,
-  //  EParOp_Float           = 51,
-  //  EParOp_Var             = 52,
-  //  EParOp_Operator        = 53,
-  EParOp_Ret = 60,
-  EParOp_Call = 61,
-  EParOp_CallExternal = 62,
-  //  EParOp_PopInt          = 63,
-  EParOp_PushInt = 64,
-  EParOp_PushVar = 65,
-  //  EParOp_PushString      = 66,
-  EParOp_PushInstance = 67,
-  //  EParOp_PushIndex       = 68,
-  //  EParOp_PopVar          = 69,
-  EParOp_AssignString = 70,
-  EParOp_AssignStringRef = 71,
-  EParOp_AssignFunc = 72,
-  EParOp_AssignFloat = 73,
-  EParOp_AssignInstance = 74,
-  EParOp_Jump = 75,
-  EParOp_JumpIf = 76,
-  EParOp_SetInstance = 80,
-  //  EParOp_Skip            = 90,
-  //  EParOp_Label           = 91,
-  //  EParOp_Func            = 92,
-  //  EParOp_FuncEnd         = 93,
-  //  EParOp_Class           = 94,
-  //  EParOp_ClassEnd        = 95,
-  //  EParOp_Instance        = 96,
-  //  EParOp_InstanceEnd     = 97,
-  //  EParOp_String          = 98,
-  //  EParOp_Array           = 180,  // EParOp_Var + 128
-  EParOp_PushArrayVar = 245  // EParOp_PushVar + EParOp_Array
+  EParOp_Plus                 =  0, // a + b
+  EParOp_Minus                =  1, // a - b
+  EParOp_Multiply             =  2, // a * b
+  EParOp_Divide               =  3, // a / b
+  EParOp_Mod                  =  4, // a % b
+  EParOp_BinOr                =  5, // a | b
+  EParOp_BinAnd               =  6, // a & b
+  EParOp_Less                 =  7, // a < b
+  EParOp_Greater              =  8, // a > b
+  EParOp_AssignInt            =  9, // a = b
+
+  EParOp_LogOr                = 11, // a || b
+  EParOp_LogAnd               = 12, // a && b
+  EParOp_ShiftLeft            = 13, // a << b
+  EParOp_ShiftRight           = 14, // a >> b
+  EParOp_LessOrEqual          = 15, // a <= b
+  EParOp_Equal                = 16, // a == b
+  EParOp_NotEqual             = 17, // a != b
+  EParOp_GreaterOrEqual       = 18, // a >= b
+  EParOp_AssignAdd            = 19, // a += b (a = a + b)
+  EParOp_AssignSubtract       = 20, // a -= b (a = a - b)
+  EParOp_AssignMultiply       = 21, // a *= b (a = a * b)
+  EParOp_AssignDivide         = 22, // a /= b (a = a / b)
+  EParOp_Unary_Plus           = 30, // +a
+  EParOp_Unary_Minus          = 31, // -a
+  EParOp_Unary_Not            = 32, // !a
+  EParOp_Unary_Negate         = 33, // ~a
+  //  EParOp_Max_Operation    = 33,
+
+  //  EParTok_LeftBracket     = 40, // '('
+  //  EParTok_RightBracket    = 41, // ')'
+  //  EParTok_Semicolon       = 42, // ';'
+  //  EParTok_Comma           = 43, // ','
+  //  EParTok_CurlyBracket    = 44, // '{', '}' - why both curly brackets in one token???
+  //  EParTok_None            = 45,
+
+  //  EParTok_Float           = 51,
+  //  EParTok_Var             = 52,
+  //  EParTok_Operator        = 53,
+
+  EParTok_Ret                 = 60,
+  EParTok_Call                = 61,
+  EParTok_CallExternal        = 62,
+  //  EParTok_PopInt          = 63,
+  EParTok_PushInt             = 64,
+  EParTok_PushVar             = 65,
+  //  EParTok_PushString      = 66,
+  EParTok_PushInstance        = 67,
+  //  EParTok_PushIndex       = 68,
+  //  EParTok_PopVar          = 69,
+  EParTok_AssignString        = 70,
+  EParTok_AssignStringRef     = 71,
+  EParTok_AssignFunc          = 72,
+  EParTok_AssignFloat         = 73,
+  EParTok_AssignInstance      = 74,
+  EParTok_Jump                = 75,
+  EParTok_JumpIf              = 76,
+  EParTok_SetInstance         = 80,
+  //  EParTok_Skip            = 90,
+  //  EParTok_Label           = 91,
+  //  EParTok_Func            = 92,
+  //  EParTok_FuncEnd         = 93,
+  //  EParTok_Class           = 94,
+  //  EParTok_ClassEnd        = 95,
+  //  EParTok_Instance        = 96,
+  //  EParTok_InstanceEnd     = 97,
+  //  EParTok_String          = 98,
+  //  EParTok_Array           =180, // EParTok_Var     + 128 - flag!
+  EParTok_PushArrayVar        =245  // EParTok_PushVar + EParTok_Array
   };
 
 template<class T>
@@ -241,6 +246,10 @@ class DataContainer final {
         T*                   d = data();
         for(size_t i=0; i<size && i<sz; ++i)
           n[i] = d[i];
+        if(size>sz) {
+          for(size_t i=sz; i<size; ++i) // NOTE: default construct on resize when previously size==1
+            n[i] = T();
+          }
         val = std::move(n);
         } else {
         if(sz>0)
@@ -375,16 +384,18 @@ struct PARSymbol {
     if(isClassVar) {
       bool isRegistered = classMemberOffset != -1;
       if(!isRegistered) {
-        LogError() << "DaedalusVM: class data member not registered: " << name;
+        LogWarn() << "DaedalusVM: class data member not registered: " << name;
         }
       else if (baseAddr == nullptr) {
-        LogError() << "DaedalusVM: base address of C_Class is nullptr: " << name;
+        LogWarn() << "DaedalusVM: base address of C_Class is nullptr: " << name;
         static T empty={};
-        return empty; // FIXME: this comes up often, so assuming that when functions get called with null objects, return zero as otherwise this messes up script logic massively - testcase: npc nek gives deadxp on start of g1, because ZS_DEAD "(C_NpcIsHuman(other) && other.aivar[AIV_PARTYMEMBER])" returns some garbage value for AIV_PARTYMEMBER called with "instance other" == nullptr
+        return empty; // FIXME: this comes up often in G1, according to https://wiki.worldofgothic.de/doku.php?id=daedalus undefined variables are zero initialized, so lowered log severity to warn and also its actually not worth flooding the log with this
+        // so assuming that when functions get called with null objects, return zero as otherwise this messes up script logic massively - testcase: npc nek gives deadxp on start of g1, because ZS_DEAD "(C_NpcIsHuman(other) && other.aivar[AIV_PARTYMEMBER])" returns some garbage value for AIV_PARTYMEMBER called with "instance other" == nullptr
+        // or there is something fundamentally wrong in the way the usage of self,other,victim and item works when changing stack frames
         }
       else if (idx >= classMemberArraySize) {
         warnIndexOutOfBounds(idx, classMemberArraySize);
-        LogError() << "DaedalusVM: index out of range for registered class data member: " << name;
+        // LogError() << "DaedalusVM: index out of range for registered class data member: " << name;
         }
       else {
         return getClassMember<T>(baseAddr)[idx];
@@ -417,16 +428,16 @@ struct PARSymbol {
     }
   };
 
-struct PARSymTable {
-  std::vector<uint32_t>                       sortTable;
-  std::vector<PARSymbol>                      symbols;
-  std::vector<std::pair<std::string, size_t>> symbolsByName;
+struct PARSymTable { // kinda zCPar_SymbolTable
+  std::vector<uint32_t>                       sortTable; // tableSort
+  std::vector<PARSymbol>                      symbols;   // firstSymbol and lastSymbol
+  std::vector<std::pair<std::string, size_t>> symbolsByName; // table
   std::unordered_map<size_t, size_t>          functionsByAddress;
   };
 
-struct PARStack {
-  size_t stackOffset;
-  size_t stackSize;
+struct PARStack { // zCPar_Stack
+  size_t stackOffset; // stack
+  size_t stackSize;   // stacksize
   };
 
 struct PARStackOpCode {
@@ -436,11 +447,11 @@ struct PARStackOpCode {
    * These are valid depending on "op"
    */
   union {
-    int32_t address;  // EParOp_Call, EParOp_Jump, EParOp_JumpIf,
-    int32_t symbol;   // EParOp_CallExternal, EParOp_PushVar, EParOp_PushInstance, EParOp_SetInstance, EParOp_PushArrayVar
-    int32_t value;    // EParOp_PushInt
+    int32_t address;  // EParTok_Call, EParTok_Jump, EParTok_JumpIf,
+    int32_t symbol;   // EParTok_CallExternal, EParTok_PushVar, EParTok_PushInstance, EParTok_SetInstance, EParTok_PushArrayVar
+    int32_t value;    // EParTok_PushInt
     };
-  uint8_t index;      // EParOp_PushArrayVar
+  uint8_t index;      // EParTok_PushArrayVar
   size_t  opSize;     // Size of this operation
   };
 

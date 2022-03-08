@@ -32,13 +32,13 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
   while(true) {
     const PARStackOpCode& op = nextInstruction(PC);
     switch (op.op) {
-      case EParOp_Add: {
+      case EParOp_Plus: {
         a = popDataValue();
         b = popDataValue();
         pushInt(a+b);
         break;
         }
-      case EParOp_Subract: {
+      case EParOp_Minus: {
         a = popDataValue();
         b = popDataValue();
         pushInt(a-b);
@@ -88,12 +88,6 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         a = popDataValue();
         b = popDataValue();
         pushInt(a > b ? 1 : 0);
-        break;
-        }
-      case EParOp_AssignFunc: {
-        auto&   a = popIntVar();
-        int32_t b = popDataValue();
-        a = b;
         break;
         }
       case EParOp_AssignInt: {
@@ -174,21 +168,21 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         v /= b;
         break;
         }
-      case EParOp_Plus:
+      case EParOp_Unary_Plus:
         pushInt(+popDataValue());
         break;
-      case EParOp_Minus:
+      case EParOp_Unary_Minus:
         pushInt(-popDataValue());
         break;
-      case EParOp_Not:
+      case EParOp_Unary_Not:
         pushInt(!popDataValue());
         break;
-      case EParOp_Negate:
+      case EParOp_Unary_Negate:
         pushInt(~popDataValue());
         break;
-      case EParOp_Ret:
+      case EParTok_Ret:
         return;
-      case EParOp_Call: {
+      case EParTok_Call: {
         std::function<void(DaedalusVM&)>* f=nullptr;
         {
           auto it = m_InternalsByIndex.find(op.address);
@@ -217,7 +211,7 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         break;
         }
 
-      case EParOp_CallExternal: {
+      case EParTok_CallExternal: {
         std::function<void(DaedalusVM&)>* f=nullptr;
         if(size_t(op.symbol)<m_ExternalsByIndex.size()){
           f = &m_ExternalsByIndex[size_t(op.symbol)];
@@ -241,56 +235,57 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         break;
         }
 
-      case EParOp_PushInt:
+      case EParTok_PushInt:
         pushInt(op.value);
         break;
-      case EParOp_PushVar:
+      case EParTok_PushVar:
         pushVar(size_t(op.symbol),0);
         break;
-      case EParOp_PushInstance:
+      case EParTok_PushInstance:
         pushInt(op.symbol);
         //pushVar(size_t(op.symbol));
         break;  //TODO: Not sure about this
-      case EParOp_AssignString: {
+      case EParTok_AssignString: {
         ZString& s1 = popStringVar();
         ZString  s2 = popString();
         s1 = s2;
         break;
         }
-
-      case EParOp_AssignStringRef:
-        LogError() << "EParOp_AssignStringRef not implemented!";
+      case EParTok_AssignStringRef:
+        LogError() << "EParTok_AssignStringRef not implemented!";
         break;
-
-      case EParOp_AssignFloat: {
+      case EParTok_AssignFunc: {
+        auto&   a = popIntVar();
+        int32_t b = popDataValue();
+        a = b;
+        break;
+        }
+      case EParTok_AssignFloat: {
         float& a = popFloatVar();
         float  b = popFloatValue();
         a = b;
         break;
         }
-
-      case EParOp_AssignInstance: {
+      case EParTok_AssignInstance: {
         auto& sa = popVar();
         auto& sb = popVar();
 
         sa.instance = sb.instance;
         break;
         }
-
-      case EParOp_Jump:
+      case EParTok_Jump:
         PC = size_t(op.address);
         break;
-
-      case EParOp_JumpIf:
+      case EParTok_JumpIf:
         a = popDataValue();
         if(a==0)
           PC = size_t(op.address);
         break;
 
-      case EParOp_SetInstance:
+      case EParTok_SetInstance:
         setCurrentInstance(size_t(op.symbol));
         break;
-      case EParOp_PushArrayVar:{
+      case EParTok_PushArrayVar:{
         pushVar(size_t(op.symbol), op.index);
         break;
         }
@@ -351,7 +346,7 @@ T DaedalusVM::popDataValue() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getValue<T>(top.id,top.inst);
     }
@@ -402,7 +397,7 @@ int32_t DaedalusVM::popInt() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getValue<int32_t>(top.id,top.inst);
     }
@@ -415,7 +410,7 @@ float DaedalusVM::popFloat() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getFloat(top.id,top.inst);
     }
@@ -428,7 +423,7 @@ ZString DaedalusVM::popString() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getString(top.id,top.inst);
     }
@@ -443,7 +438,7 @@ int32_t& DaedalusVM::popIntVar() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getInt(top.id,top.inst);
     }
@@ -457,7 +452,7 @@ float& DaedalusVM::popFloatVar() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getFloat(top.id,top.inst);
     }
@@ -471,7 +466,7 @@ ZString& DaedalusVM::popStringVar() {
 
   auto top = m_Stack.back();
   m_Stack.pop_back();
-  if(top.tag==EParOp_PushVar){
+  if(top.tag==EParTok_PushVar){
     auto& sym = m_DATFile.getSymbolByIndex(size_t(top.i32));
     return sym.getString(top.id,top.inst);
     }
@@ -625,11 +620,11 @@ void DaedalusVM::disAsm(size_t symIdx) {
   while(true) {
     const PARStackOpCode& op = nextInstruction(PC);
     switch (op.op) {
-      case EParOp_Add:
-        LogInfo() << "EParOp_Add";
+      case EParOp_Plus:
+        LogInfo() << "EParOp_Plus";
         break;
-      case EParOp_Subract:
-        LogInfo() << "EParOp_Subract";
+      case EParOp_Minus:
+        LogInfo() << "EParOp_Minus";
         break;
       case EParOp_Multiply:
         LogInfo() << "EParOp_Multiply";
@@ -651,9 +646,6 @@ void DaedalusVM::disAsm(size_t symIdx) {
         break;
       case EParOp_Greater:
         LogInfo() << "EParOp_Greater";
-        break;
-      case EParOp_AssignFunc:
-        LogInfo() << "EParOp_AssignFunc";
         break;
       case EParOp_AssignInt:
         LogInfo() << "EParOp_AssignInt";
@@ -694,59 +686,63 @@ void DaedalusVM::disAsm(size_t symIdx) {
       case EParOp_AssignDivide:
         LogInfo() << "EParOp_AssignDivide";
         break;
-      case EParOp_Plus:
-        LogInfo() << "EParOp_Plus";
+      case EParOp_Unary_Plus:
+        LogInfo() << "EParOp_Unary_Plus";
         break;
-      case EParOp_Minus:
-        LogInfo() << "EParOp_Minus";
+      case EParOp_Unary_Minus:
+        LogInfo() << "EParOp_Unary_Minus";
         break;
-      case EParOp_Not:
-        LogInfo() << "EParOp_Not";
+      case EParOp_Unary_Not:
+        LogInfo() << "EParOp_Unary_Not";
         break;
-      case EParOp_Negate:
-        LogInfo() << "EParOp_Negate";
+      case EParOp_Unary_Negate:
+        LogInfo() << "EParOp_Unary_Negate";
         break;
-      case EParOp_Ret:
+      // above are operations, below are tokens
+      case EParTok_Ret:
         LogInfo() << "EParOp_Ret";
         return;
-      case EParOp_Call:
-        LogInfo() << "EParOp_Call " << op.address;
+      case EParTok_Call:
+        LogInfo() << "EParTok_Call " << op.address;
         break;
-      case EParOp_CallExternal:
-        LogInfo() << "EParOp_CallExternal " << op.symbol;
+      case EParTok_CallExternal:
+        LogInfo() << "EParTok_CallExternal " << op.symbol;
         break;
-      case EParOp_PushInt:
-        LogInfo() << "EParOp_PushInt " << op.value;
+      case EParTok_PushInt:
+        LogInfo() << "EParTok_PushInt " << op.value;
         break;
-      case EParOp_PushVar:
-        LogInfo() << "EParOp_PushVar " << op.symbol;
+      case EParTok_PushVar:
+        LogInfo() << "EParTok_PushVar " << op.symbol;
         break;
-      case EParOp_PushInstance:
-        LogInfo() << "EParOp_PushInstance " << op.symbol;
+      case EParTok_PushInstance:
+        LogInfo() << "EParTok_PushInstance " << op.symbol;
         break;
-      case EParOp_AssignString:
-        LogInfo() << "EParOp_AssignString";
+      case EParTok_AssignString:
+        LogInfo() << "EParTok_AssignString";
         break;
-      case EParOp_AssignStringRef:
-        LogError() << "EParOp_AssignStringRef not implemented!";
+      case EParTok_AssignStringRef:
+        LogError() << "EParTok_AssignStringRef not implemented!";
         break;
-      case EParOp_AssignFloat:
-        LogInfo() << "EParOp_AssignFloat";
+      case EParTok_AssignFunc:
+        LogInfo() << "EParOp_AssignFunc";
         break;
-      case EParOp_AssignInstance:
-        LogInfo() << "EParOp_AssignInstance";
+      case EParTok_AssignFloat:
+        LogInfo() << "EParTok_AssignFloat";
         break;
-      case EParOp_Jump:
-        LogInfo() << "EParOp_Jump " << op.address;
+      case EParTok_AssignInstance:
+        LogInfo() << "EParTok_AssignInstance";
         break;
-      case EParOp_JumpIf:
-        LogInfo() << "EParOp_JumpIf " << op.address;
+      case EParTok_Jump:
+        LogInfo() << "EParTok_Jump " << op.address;
         break;
-      case EParOp_SetInstance:
-        LogInfo() << "EParOp_SetInstance " << op.symbol;
+      case EParTok_JumpIf:
+        LogInfo() << "EParTok_JumpIf " << op.address;
         break;
-      case EParOp_PushArrayVar:
-        LogInfo() << "EParOp_PushArrayVar " << op.symbol << " " << op.index;
+      case EParTok_SetInstance:
+        LogInfo() << "EParTok_SetInstance " << op.symbol;
+        break;
+      case EParTok_PushArrayVar:
+        LogInfo() << "EParTok_PushArrayVar " << op.symbol << " " << op.index;
         break;
       default:
         LogInfo() << "[bad instr]";

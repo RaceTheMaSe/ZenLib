@@ -107,14 +107,14 @@ class DaedalusVM {
       Stk(int32_t i):i32(i){}
       Stk(float   fIn):f(fIn){}
       Stk(ZString sIn):s(std::move(sIn)){}
-      Stk(void* instIn,int32_t i,uint32_t idIn):i32(i),tag(EParOp_PushVar),id(idIn),inst(instIn){}
+      Stk(void* instIn,int32_t i,uint32_t idIn):i32(i),tag(EParTok_PushVar),id(idIn),inst(instIn){}
 
       union {
         int32_t i32;
         float   f;
         };
       ZString  s;
-      EParOp   tag=EParOp_PushInt;
+      EParOp   tag=EParTok_PushInt;
       uint32_t id =0;
       void*    inst=nullptr;
       };

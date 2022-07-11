@@ -628,7 +628,7 @@ namespace ZenLoad
       struct
       {
         float        sndVolume       = 0;
-        SoundMode    sndType         = SM_LOOPING;
+        SoundMode    sndMode         = SM_LOOPING;
         float        sndRandDelay    = 0;
         float        sndRandDelayVar = 0;
         bool         sndStartOn      = false;

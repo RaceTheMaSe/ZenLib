@@ -1,5 +1,6 @@
 #include "fileIndex.h"
 #include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <regex>

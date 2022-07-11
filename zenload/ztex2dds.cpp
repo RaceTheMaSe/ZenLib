@@ -6,12 +6,12 @@
 #include "ztex2dds.h"
 #include <algorithm>
 #include <string>
-#include <cassert>
-#include <cinttypes>
-#include <cmath>
-#include <squish.h>
-#include <cstring>
-
+#include "ztex.h"
+#include <assert.h>
+#include <inttypes.h>
+#include <math.h>
+#include <string.h>
+#include "utils/logger.h"
 
 #define ZTEX2DDS_ERROR_NONE 0   /* No Error                  */
 #define ZTEX2DDS_ERROR_ARGS 1   /* Invalid Params / Syntax   */
@@ -407,54 +407,16 @@ namespace ZenLoad
       }
 
     /**
-   * @param ddsData Loaded dds
-   * @return Pointer to the surface info of the given dds
-   */
-    tagDDSURFACEDESC2 getSurfaceDesc(const std::vector<uint8_t>& ddsData) {
-      tagDDSURFACEDESC2 desc{};
-      memcpy(&desc, &ddsData[sizeof(uint32_t)], sizeof(tagDDSURFACEDESC2));
-      return desc;
-      }
+	 * @param ddsData Loaded dds
+	 * @return Pointer to the surface info of the given dds
+	 */
+    tagDDSURFACEDESC2 getSurfaceDesc(const std::vector<uint8_t>& ddsData)
+    {
+        tagDDSURFACEDESC2 desc;
 
-    /**
-      * @brief Convert dds to RGBA8
-      */
-    void convertDDSToRGBA8(const std::vector<uint8_t>& ddsData, std::vector<uint8_t>& rgba8Data, int mip) {
-      size_t seek = 0;
-      seek += sizeof(uint32_t);  // Skip magic number
-      const auto* desc = reinterpret_cast<const tagDDSURFACEDESC2*>(&ddsData[seek]);
-      seek += sizeof(tagDDSURFACEDESC2);
+        memcpy(&desc, &ddsData.data()[sizeof(uint32_t)], sizeof(tagDDSURFACEDESC2));
 
-      mip = std::min((int)mip, (int)desc->dwMipMapCount);
-
-      DXTLevel dxtLevel = getDXTLevelFromDDS(ddsData);
-      int squishDxtLevel = 0;
-      switch (dxtLevel) {
-        case DXTLevel::DXT1:
-          squishDxtLevel = squish::kDxt1;
-          break;
-
-        case DXTLevel::DXT3:
-          squishDxtLevel = squish::kDxt3;
-          break;
-
-        case DXTLevel::DXT5:
-          squishDxtLevel = squish::kDxt5;
-          break;
-
-        case DXTLevel::Unknown:
-          assert(false);
-          return;
-        }
-
-      for (int i = 0; i < mip; i++)
-        seek += ComputeSizeInBytes(i, (int)desc->dwWidth, (int)desc->dwHeight, squishDxtLevel == squish::kDxt1);
-
-      int px = (int)std::max(1.0f, (float)floor(desc->dwWidth / pow(2.0f, mip)));
-      int py = (int)std::max(1.0f, (float)floor(desc->dwHeight / pow(2.0f, mip)));
-      rgba8Data.resize(px * py * sizeof(uint32_t));
-
-      squish::DecompressImage(rgba8Data.data(), px, py, &ddsData[seek], squishDxtLevel);
-      }
+        return desc;
+    }
 }  // namespace ZenLoad
 /* THE END */

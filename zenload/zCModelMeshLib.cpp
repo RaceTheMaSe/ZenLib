@@ -215,25 +215,49 @@ void zCModelMeshLib::loadMDL(ZenParser& parser) {
 /**
 * @brief Creates packed submesh-data
 */
-void zCModelMeshLib::packMesh(PackedSkeletalMesh& mesh) const {
-  for (const auto& m : m_Meshes)
-    m.packMesh(mesh);
+void zCModelMeshLib::packMesh(PackedSkeletalMesh& mesh) const
+{
+    for (const auto& m : m_Meshes)
+    {
+        PackedSkeletalMesh internalMesh;
+        m.packMesh(internalMesh);
 
-  mesh.bbox[0] = {FLT_MAX, FLT_MAX, FLT_MAX};
-  mesh.bbox[1] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+        size_t vertexBase = mesh.vertices.size();
+        mesh.vertices.insert(
+            mesh.vertices.end(),
+            internalMesh.vertices.begin(),
+            internalMesh.vertices.end());
 
-  // Choose the biggest BBox possible (From model hierarchy or soft-meshes)
-  for (const auto& m : m_Meshes) {
-    ZMath::float3 min, max;
-    m.getAABBTotal(min, max);
+        size_t indexBase = mesh.indices.size();
+        for (auto index : internalMesh.indices)
+        {
+            mesh.indices.push_back(index + vertexBase);
+        }
 
-    mesh.bbox[0].x = std::min(mesh.bbox[0].x, min.x);
-    mesh.bbox[0].y = std::min(mesh.bbox[0].y, min.y);
-    mesh.bbox[0].z = std::min(mesh.bbox[0].z, min.z);
+        for (const auto& s : internalMesh.subMeshes)
+        {
+            PackedSkeletalMesh::SubMesh submesh(s);
+            submesh.indexOffset += indexBase;
+            mesh.subMeshes.push_back(submesh);
+        }
+    }
 
-    mesh.bbox[1].x = std::max(mesh.bbox[1].x, max.x);
-    mesh.bbox[1].y = std::max(mesh.bbox[1].y, max.y);
-    mesh.bbox[1].z = std::max(mesh.bbox[1].z, max.z);
+    mesh.bbox[0] = {FLT_MAX, FLT_MAX, FLT_MAX};
+    mesh.bbox[1] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+
+    // Choose the biggest BBox possible (From model hierarchy or soft-meshes)
+    for (const auto& m : m_Meshes)
+    {
+        ZMath::float3 min, max;
+        m.getAABBTotal(min, max);
+
+        mesh.bbox[0].x = std::min(mesh.bbox[0].x, min.x);
+        mesh.bbox[0].y = std::min(mesh.bbox[0].y, min.y);
+        mesh.bbox[0].z = std::min(mesh.bbox[0].z, min.z);
+
+        mesh.bbox[1].x = std::max(mesh.bbox[1].x, max.x);
+        mesh.bbox[1].y = std::max(mesh.bbox[1].y, max.y);
+        mesh.bbox[1].z = std::max(mesh.bbox[1].z, max.z);
     }
 
   mesh.bbox[0].x = std::min(mesh.bbox[0].x, m_BBox[0].x);

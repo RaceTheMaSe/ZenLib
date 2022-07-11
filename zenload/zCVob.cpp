@@ -2,6 +2,7 @@
 #include <exception>
 #include <stdexcept>
 
+#include "zTypes.h"
 #include "zenParserPropRead.h"
 #include "parserImpl.h"
 #include "utils/logger.h"
@@ -10,33 +11,37 @@
 
 using namespace ZenLoad;
 
+struct packedBitField {
+  uint8_t showVisual              : 1;
+  uint8_t visualCamAlign          : 2;
+  uint8_t cdStatic                : 1;
+  uint8_t cdDyn                   : 1;
+  uint8_t staticVob               : 1;
+  uint8_t dynShadow               : 2;
+
+  uint8_t hasPresetName           : 1;
+  uint8_t hasVobName              : 1;
+  uint8_t hasVisualName           : 1;
+  uint8_t hasRelevantVisualObject : 1;
+  uint8_t hasAIObject             : 1;
+  uint8_t hasEventManObject       : 1;
+  uint8_t physicsEnabled          : 1;
+
+  uint8_t visualAniMode           : 2;
+  uint8_t zbias                   : 5;
+  uint8_t bAmbient                : 1;
+  };
+
 #pragma pack(push, 1)
 struct packedVobData {
-  ZMath::float3 bbox3DWS[2];
-  ZMath::float3 positionWS;
-  zMAT3 trafoRotWS{};
+  ZMath::float3  bbox3DWS[2];
+  ZMath::float3  positionWS;
+  zMAT3          trafoRotWS;
 
-  struct packedBitField {
-    uint8_t showVisual              : 1;
-    uint8_t visualCamAlign          : 2;
-    uint8_t cdStatic                : 1;
-    uint8_t cdDyn                   : 1;
-    uint8_t staticVob               : 1;
-    uint8_t dynShadow               : 2;
-    uint8_t hasPresetName           : 1;
-    uint8_t hasVobName              : 1;
-    uint8_t hasVisualName           : 1;
-    uint8_t hasRelevantVisualObject : 1;
-    uint8_t hasAIObject             : 1;
-    uint8_t hasEventManObject       : 1;
-    uint8_t physicsEnabled          : 1;
-    uint8_t visualAniMode           : 2;
-    uint8_t zbias                   : 5;
-    uint8_t bAmbient                : 1;
-    } bitfield{};
+  uint8_t        bits[3];
 
-  float visualAniStrength{};
-  float vobFarClipZ{};
+  float          visualAniStrength;
+  float          vobFarClipZ;
   };
 #pragma pack(pop)
 
@@ -74,39 +79,41 @@ static void read_zCVob(zCVobData &info, ZenParser &parser, ZenParser::FileVersio
   bool hasEventManObject       = false;
 
   if(info.pack) {
-    packedVobData pd = {};
+    packedVobData  pd = {};
+    packedBitField bitfield = {};
     parser.getImpl()->readEntry("", &pd, sizeof(pd));
+    std::memcpy(&bitfield,&pd.bits[0],3);
 
     info.bbox[0]               = pd.bbox3DWS[0];
     info.bbox[1]               = pd.bbox3DWS[1];
     info.position              = pd.positionWS;
     info.rotationMatrix3x3     = pd.trafoRotWS;
     info.rotationMatrix        = info.rotationMatrix3x3.toMatrix();
-    info.showVisual            = pd.bitfield.showVisual;
-    info.visualCamAlign        = VisualCamAlign(pd.bitfield.visualCamAlign);
-    info.cdStatic              = pd.bitfield.cdStatic;
-    info.cdDyn                 = pd.bitfield.cdDyn;
-    info.staticVob             = pd.bitfield.staticVob;
-    info.dynamicShadow         = pd.bitfield.dynShadow;
-    info.physicsEnabled        = pd.bitfield.physicsEnabled;
-    info.visualAniMode         = AnimMode(pd.bitfield.visualAniMode);
-    info.zBias                 = pd.bitfield.zbias;
-    info.isAmbient             = pd.bitfield.bAmbient;
+    info.showVisual            = bitfield.showVisual;
+    info.visualCamAlign        = static_cast<ZenLoad::VisualCamAlign>(bitfield.visualCamAlign);
+    info.cdStatic              = bitfield.cdStatic;
+    info.cdDyn                 = bitfield.cdDyn;
+    info.staticVob             = bitfield.staticVob;
+    info.dynamicShadow         = bitfield.dynShadow;
+    info.physicsEnabled        = bitfield.physicsEnabled;
+    info.visualAniMode         = AnimMode(bitfield.visualAniMode);
+    info.zBias                 = bitfield.zbias;
+    info.isAmbient             = bitfield.bAmbient;
     info.visualAniModeStrength = pd.visualAniStrength;
     info.vobFarClipScale       = pd.vobFarClipZ;
 
-    if(pd.bitfield.hasPresetName)
+    if(bitfield.hasPresetName)
       parser.getImpl()->readEntry("", info.presetName);
 
-    if(pd.bitfield.hasVobName)
+    if(bitfield.hasVobName)
       parser.getImpl()->readEntry("", info.vobName);
 
-    if(pd.bitfield.hasVisualName)
+    if(bitfield.hasVisualName)
       parser.getImpl()->readEntry("", info.visual);
 
-    hasRelevantVisualObject = pd.bitfield.hasRelevantVisualObject;
-    hasAIObject             = pd.bitfield.hasAIObject;
-    hasEventManObject       = pd.bitfield.hasEventManObject;
+    hasRelevantVisualObject = bitfield.hasRelevantVisualObject;
+    hasAIObject             = bitfield.hasAIObject;
+    hasEventManObject       = bitfield.hasEventManObject;
     } else {
     auto& rd = *parser.getImpl();
     rd.readEntry("presetName", info.presetName);
@@ -550,7 +557,7 @@ static void read_zCVob_zCVobSound(zCVobData &info, ZenParser &parser, ZenParser:
   auto& rd = *parser.getImpl();
   info.vobType = zCVobData::VT_zCVobSound;
   rd.readEntry("sndVolume",       info.zCVobSound.sndVolume);
-  rd.readEntry("sndMode",         reinterpret_cast<uint32_t&>(info.zCVobSound.sndType));
+  rd.readEntry("sndMode",         reinterpret_cast<uint32_t&>(info.zCVobSound.sndMode));
   rd.readEntry("sndRandDelay",    info.zCVobSound.sndRandDelay);
   rd.readEntry("sndRandDelayVar", info.zCVobSound.sndRandDelayVar);
   rd.readEntry("sndStartOn",      info.zCVobSound.sndStartOn);

@@ -159,9 +159,9 @@ namespace ZMath
         return memcmp(T::v, w.v, sizeof(w.v)) == 0;
     }
 
-    bool operator!=(const t_vector<T, S...>& v) const
+    bool operator!=(const t_vector<T, S...>& vOther) const
     {
-        return !(*this == v);
+        return !(*this == vOther);
     }
 
     t_vector<T, S...> operator*(float s) const

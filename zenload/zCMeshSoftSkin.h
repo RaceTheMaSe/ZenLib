@@ -51,8 +51,10 @@ namespace ZenLoad
       */
     void getAABBTotal(ZMath::float3& min, ZMath::float3& max) const;
 
-  private:
-    void updateBboxTotal();
+        const uint8_t* getVertexWeightStream() const { return m_VertexWeightStream.data(); }
+
+    private:
+        void updateBboxTotal();
 
     /**
       * @brief Internal zCProgMeshProto of this soft skin. The soft-skin only displaces the vertices found in the ProgMesh.

@@ -330,7 +330,7 @@ namespace ZenLoad
 
         struct
         {
-            int         stateNum=0;
+            int32_t     stateNum = 0;
             std::string triggerTarget;
             std::string useWithItem;
             std::string conditionFunc;
@@ -520,9 +520,9 @@ namespace ZenLoad
             bool fall    = false;
             } touchDamage;
 
-          float damageRepeatDelaySec = 0;
-          float damageVolDownScale   = 0;
-          int   damageCollType       = 0;
+          float   damageRepeatDelaySec = 0;
+          float   damageVolDownScale   = 0;
+          int32_t damageCollType       = 0;
         } oCTouchDamage;
 
         std::vector<zCVobData> childVobs;

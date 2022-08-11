@@ -324,7 +324,7 @@ namespace ZenLoad
             }
         }
         /* Mipmaps */
-        MipmapCount = std::max(1u, ZTexHeader.TexInfo.MipMaps);
+        MipmapCount = std::max(1, static_cast<int>(ZTexHeader.TexInfo.MipMaps));
         BufferSize = 0;
         for (MipmapLevel = 0; MipmapLevel < MipmapCount; MipmapLevel++)
             BufferSize += GetMipmapSize(ZTexHeader.TexInfo.Format,

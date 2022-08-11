@@ -449,7 +449,7 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
 void ZenParser::readPresets(std::vector<zCVobData>& vobs, ZenParser::FileVersion version) {
   LogInfo() << "ZEN: Reading presets...";
 
-  int numVobLightPresets = 0;
+  int32_t numVobLightPresets = 0;
   getImpl()->readEntry("numVobLightPresets",numVobLightPresets);
   if(numVobLightPresets<0)
     return;

@@ -180,33 +180,33 @@ void zCMeshSoftSkin::packMesh(PackedSkeletalMesh& mesh) const {
 
   uint32_t meshVxStart = 0, iboStart = 0;
   for(size_t s=0; s<m_Mesh.getNumSubmeshes(); s++) {
-      const zCProgMeshProto::SubMesh& sm = m_Mesh.getSubmesh(s);
-      // Get data
-      for(const auto & wedge:sm.m_WedgeList) {
-         SkeletalVertex v     = vertices[wedge.m_VertexIndex];
+    const zCProgMeshProto::SubMesh& sm = m_Mesh.getSubmesh(s);
+    // Get data
+    for(const auto & wedge:sm.m_WedgeList) {
+        SkeletalVertex v     = vertices[wedge.m_VertexIndex];
 
-        v.Normal   = wedge.m_Normal;
-        v.TexCoord = wedge.m_Texcoord;
-        v.Color    = sm.m_Material.color;
-        *vbo = v;
-        ++vbo;
-        }
-
-      // And get the indices
-      for(auto i:sm.m_TriangleList) {
-        for(auto m_Wedge:i.m_Wedges) {
-          *ibo = m_Wedge + meshVxStart;
-          ++ibo;
-          }
-        }
-
-      auto& pack = mesh.subMeshes[s];
-      pack.indexOffset = iboStart;
-      pack.indexSize   = sm.m_TriangleList.size()*3;
-      pack.material    = sm.m_Material;
-      meshVxStart += uint32_t(sm.m_WedgeList.size());
-      iboStart    += uint32_t(sm.m_TriangleList.size()*3);
+      v.Normal   = wedge.m_Normal;
+      v.TexCoord = wedge.m_Texcoord;
+      v.Color    = sm.m_Material.color;
+      *vbo = v;
+      ++vbo;
       }
+
+    // And get the indices
+    for(auto i:sm.m_TriangleList) {
+      for(auto m_Wedge:i.m_Wedges) {
+        *ibo = m_Wedge + meshVxStart;
+        ++ibo;
+        }
+      }
+
+    auto& pack = mesh.subMeshes[s];
+    pack.indexOffset = iboStart;
+    pack.indexSize   = sm.m_TriangleList.size()*3;
+    pack.material    = sm.m_Material;
+    meshVxStart += uint32_t(sm.m_WedgeList.size());
+    iboStart    += uint32_t(sm.m_TriangleList.size()*3);
+    }
   }
 
 void zCMeshSoftSkin::updateBboxTotal() {

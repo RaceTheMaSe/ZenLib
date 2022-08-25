@@ -11,6 +11,7 @@
 #include "vdfs/fileIndex.h"
 #include "parserImpl.h"
 #include "utils/alignment.h"
+#include "utils/fixWindingOrder.h"
 
 using namespace ZenLoad;
 
@@ -423,6 +424,9 @@ void zCMesh::skip(ZenParser& parser) {
   }
 
 void zCMesh::packMesh(PackedMesh& mesh, float scale, bool removeDoubles) {
+  // make sure the winding order of all triangles is the same. otherwise for example the world mesh collision can be inconsistent
+  // fixWindingOrder<WorldTriangle,uint32_t>(mesh.triangles,mesh.indices);
+
 	std::vector<WorldVertex>& newVertices = mesh.vertices;
 	std::vector<uint32_t> newIndices;
 	newIndices.reserve(m_Indices.size());

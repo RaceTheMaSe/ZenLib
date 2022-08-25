@@ -323,6 +323,12 @@ namespace ZenLoad
       ZMath::float3 Normal;
       ZMath::float2 TexCoord;
       uint32_t      Color{};
+      bool operator==(const WorldVertex& other)
+      {
+        return (Position==other.Position &&
+                Normal  ==other.Normal   &&
+                TexCoord==other.TexCoord);
+      }
     };
 
     struct SkeletalVertex

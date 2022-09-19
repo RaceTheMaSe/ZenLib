@@ -580,9 +580,9 @@ namespace ZenLoad
 
       struct
       {
-        int         state         = 0;
-        int         stateTarget   = 0;
-        int         stateNum      = 0;
+        int32_t     state         = 0;
+        int32_t     stateTarget   = 0;
+        int32_t     stateNum      = 0;
         std::string triggerTarget;
         std::string useWithItem;
         std::string conditionFunc;

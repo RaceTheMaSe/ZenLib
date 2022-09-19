@@ -213,7 +213,7 @@ void Daedalus::registerGothicEngineClasses(DaedalusVM& vm) {
     REGISTER(C_Menu_Item, flags);
     REGISTER(C_Menu_Item, openDelayTime);
     REGISTER(C_Menu_Item, openDuration);
-    REGISTER(C_Menu_Item, userfloat);
+    REGISTER(C_Menu_Item, userFloat);
     REGISTER(C_Menu_Item, userString);
     REGISTER(C_Menu_Item, frameSizeX);
     REGISTER(C_Menu_Item, frameSizeY);

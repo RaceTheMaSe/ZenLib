@@ -432,7 +432,7 @@ namespace Daedalus {
       int32_t     flags=0;
       float       openDelayTime=0;
       float       openDuration=0;
-      float       userfloat[MenuConstants::MAX_USERVARS]={};
+      float       userFloat[MenuConstants::MAX_USERVARS]={};
       ZString     userString[MenuConstants::MAX_USERVARS];
       int32_t     frameSizeX=0;
       int32_t     frameSizeY=0;

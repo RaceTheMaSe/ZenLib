@@ -356,7 +356,7 @@ struct PARSymbol {
   template <typename T>
   DataContainer<T>& getDataContainer();
 
-#if !defined(__GNUC__) && !defined(ANDROID) || (defined(__clang_major__))
+#if !defined(__GNUC__) && !defined(ANDROID) || (defined(__clang__))
   template <>
   DataContainer<int32_t>& getDataContainer() {
     return this->intData;

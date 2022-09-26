@@ -96,26 +96,64 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
         }
       break;
 
-      case MSID_BBOX3D: {
-        ZMath::float3 min, max;
-        zMAT3 m3,m4;
-        ZMath::Matrix m; // OBB
-        parser.readStructure(m3); // bounding box data with center in third row
-        parser.readStructure(m4); // quite sure that its a 3x3 matrix, identity matrix in barrier mesh
-        parser.readStructure(min);
+      case MSID_BBOX3D: { // OBBs
+        ZMath::float3 c0,c1,c2,c3,p0,p1,p2,p3,min,max;
+        zMAT3 o0,o1,o2,o3;
+        // ZMath::Matrix mat41,mat40,mat42;
+        struct bbox3dMax {
+          ZMath::float3 a;
+          ZMath::float3 b;
+          float radius0;
+          float radius1;
+          float radius2;
+          float radius3;
+          ZMath::float3 c;
+          ZMath::float3 d;
+        } mat40,mat41,mat42;
+        uint16_t unkEnd;
+        if(chunkInfo.length==0x56) // world meshes have no bbox set, so skip the read of it
+          parser.setSeek(chunkEnd);
+        else {
+          if(chunkInfo.length!=0xD2) { // groundshadow.msh is only 210 byte long
+            parser.readStructure(min); // sure
+            parser.readStructure(max); // sure
+            parser.readStructure(c0); // ok
+            parser.readStructure(o0); // ok
+            parser.readStructure(p0); // ok
 
-        // FIXME: there is some unknown data here ... fill the blanks if you know it .. also variable length and world meshes zeroed data
-        uint32_t lol, rofl, lolrofl;
-        float rofllol;
-        uint16_t alsoUnknown;
-        parser.readStructure(lol);
-        parser.readStructure(rofl);
-        parser.readStructure(lolrofl);
-        parser.readStructure(rofllol);
-        alsoUnknown = parser.readBinaryWord(); (void)alsoUnknown;
+            parser.readStructure(mat40); // not ok
+            parser.readStructure(c1); // ok
+            parser.readStructure(o1); // ok - similar to o3, different direction
+            parser.readStructure(p1); // ok
 
-        m_BBMin = ZMath::float3(min.x, min.y, min.z);
-        m_BBMax = ZMath::float3(max.x, max.y, max.z);
+            parser.readStructure(mat41); // not ok
+            parser.readStructure(c2); // ok
+            parser.readStructure(o2); // ok
+            parser.readStructure(p2); // ok
+
+            parser.readStructure(mat42); // not ok
+            parser.readStructure(c3); // ok
+            parser.readStructure(o3); // ok
+            parser.readStructure(p3); // ok
+            parser.readStructure(unkEnd);
+            }
+          else {
+            parser.readStructure(min);
+            parser.readStructure(max);
+            parser.readStructure(c0);
+            parser.readStructure(o0);
+            parser.readStructure(p0);
+
+            parser.readStructure(mat40);
+            parser.readStructure(c1);
+            parser.readStructure(o1);
+            parser.readStructure(p1);
+            parser.readStructure(unkEnd);
+            }
+          // parser.readStructure(m6);
+          // m_BBMin = ZMath::float3(min.x, min.y, min.z);
+          // m_BBMax = ZMath::float3(max.x, max.y, max.z);
+        }
         
         if(parser.getSeek()!=chunkEnd)
           LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";

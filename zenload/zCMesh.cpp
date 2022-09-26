@@ -12,6 +12,7 @@
 #include "parserImpl.h"
 #include "utils/alignment.h"
 #include "utils/fixWindingOrder.h"
+#include "zenload/ztex2dds.h"
 
 using namespace ZenLoad;
 
@@ -113,7 +114,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
       case MSID_BBOX3D: {
         parser.readStructure(m_BBMin);
         parser.readStructure(m_BBMax);
-        readObb(parser,obb);
+        readObb(parser,m_obb);
         
         if(parser.getSeek()!=chunkEnd)
           LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
@@ -186,10 +187,24 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
         parser.setSeek(chunkEnd);  // Skip chunk
         break;
 
-      case MSID_LIGHTMAPLIST_SHARED:
+      case MSID_LIGHTMAPLIST_SHARED: {
+        uint32_t numTextures=parser.readBinaryDWord();
+        for(uint32_t i=0;i<numTextures;++i) {
+          std::vector<uint8_t> ddsData;
+          if(convertZTEX2DDS(parser,ddsData)!=0) {
+            LogInfo() << "Error reading lightmaplist shared. Skipping " << chunkEnd-parser.getSeek() << " bytes";
+            break;
+          }
+          m_lightMapTextures.push_back(std::move(ddsData));
+        }
+        uint32_t numEntries = parser.readBinaryDWord();
+        m_lightMaps.resize(numEntries);
+        for(uint32_t i=0;i<numEntries;++i)
+          parser.readStructure(m_lightMaps[i]);
         if(parser.getSeek()!=chunkEnd)
-          LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - lightmap list shared not implemented";
+          LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes - lightmap list read but unused";
         parser.setSeek(chunkEnd);  // Skip chunk
+        }
         break;
 
       case MSID_VERTLIST: {

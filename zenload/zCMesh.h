@@ -172,7 +172,23 @@ class zCMesh  {
        */
     const zCOBBox3D& getOrientedBoundingBox() const
     {
-      return obb;
+      return m_obb;
+    }
+
+    /**
+       * @brief getter for the lightmap texture data
+       */
+    const std::vector<uint8_t>& getLightmapTexture(size_t index) const
+    {
+      return m_lightMapTextures[index];
+    }
+
+    /**
+       * @brief getter for the lightmap entries
+       */
+    const zCLightMap& getLightmap(size_t index) const
+    {
+      return m_lightMaps[index];
     }
 
   private:
@@ -226,6 +242,16 @@ class zCMesh  {
     /**
        * @brief Oriented bounding box of this mesh
        */
-    zCOBBox3D obb;
+    zCOBBox3D m_obb;
+
+    /**
+       * @brief Lightmap textures - dds format
+       */
+    std::vector<std::vector<uint8_t>> m_lightMapTextures;
+
+    /**
+       * @brief Lightmap entries
+       */
+    std::vector<zCLightMap> m_lightMaps;
   };
 }  // namespace ZenLoad

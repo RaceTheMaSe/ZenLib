@@ -3,6 +3,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include "ztex.h"
+#include "daedalus/ZString.h"
 
 namespace ZenLoad
 {
@@ -10,6 +11,11 @@ namespace ZenLoad
     * @brief Modified ZTEX to DDS conversion
     */
   int convertZTEX2DDS(const std::vector<uint8_t>& ztexData, std::vector<uint8_t>& ddsData, bool optionForceARGB = false, int* pOutWidth = nullptr, int* pOutHeight = nullptr);
+  
+  /**
+    * @brief Modified ZTEX to DDS conversion - ZenParser variant
+    */
+  int convertZTEX2DDS(ZenParser& parser, std::vector<uint8_t>& ddsData, bool optionForceARGB = false);
 
     /**
 	 * @return Total offset (including header) of where the given mip-level starts inside ddsData

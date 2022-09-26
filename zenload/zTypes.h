@@ -448,6 +448,13 @@ namespace ZenLoad
       std::vector<zCOBBox3D> childs;
     };
 
+    struct zCLightMap {
+      ZMath::float3 origin;
+      ZMath::float3 uvUp;
+      ZMath::float3 uvRight;
+      uint32_t texIndex; // pointer to zTexture in original
+    };
+
     //#pragma pack(push, 1)
     /**
      * @brief Data of zCVob

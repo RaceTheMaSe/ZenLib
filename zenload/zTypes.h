@@ -441,6 +441,13 @@ namespace ZenLoad
       float       fireDelay=0;
     };
 
+    struct zCOBBox3D {
+      ZMath::float3 center;
+      ZMath::float3 axis[3];
+      ZMath::float3 extend;
+      std::vector<zCOBBox3D> childs;
+    };
+
     //#pragma pack(push, 1)
     /**
      * @brief Data of zCVob

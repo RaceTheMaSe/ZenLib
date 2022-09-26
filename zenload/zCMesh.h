@@ -106,6 +106,13 @@ class zCMesh  {
                         bool forceG132bitIndices = false);
 
     /**
+       * @brief Reads the oriented bounding boxes
+       * @param parser Parser reference
+       * @param box Box object
+       */
+    void readObb(ZenParser& parser, zCOBBox3D& box);
+
+    /**
        * Simply skips all data found here
        * @param parser Parser reference
        */
@@ -155,10 +162,18 @@ class zCMesh  {
        * @brief getter for the boudingboxes
        */
     void getBoundingBox(ZMath::float3& min, ZMath::float3& max) const
-      {
+    {
       min = m_BBMin;
       max = m_BBMax;
-      }
+    }
+
+    /**
+       * @brief getter for the boudingboxes
+       */
+    const zCOBBox3D& getOrientedBoundingBox() const
+    {
+      return obb;
+    }
 
   private:
     /**
@@ -207,5 +222,10 @@ class zCMesh  {
        */
     ZMath::float3 m_BBMin;
     ZMath::float3 m_BBMax;
+
+    /**
+       * @brief Oriented bounding box of this mesh
+       */
+    zCOBBox3D obb;
   };
 }  // namespace ZenLoad

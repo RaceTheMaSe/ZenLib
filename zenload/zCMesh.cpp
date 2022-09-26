@@ -231,14 +231,10 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
         // Read number of polys
         auto const numPolys = parser.readBinaryDWord();
 
-        // Read block of data
-        //std::vector<uint8_t> dataBlock;
-        //dataBlock.resize(chunkInfo.length);
-        //parser.readBinaryRaw(dataBlock.data(), chunkInfo.length);
-
         // Fake a read here, to get around an additional copy of the data
         const uint8_t* blockPtr = parser.getDataPtr();
-        parser.setSeek(parser.getSeek() + chunkInfo.length);
+        // set pointer to end of chunk, as blockPtr is used for reading this chunk
+        parser.setSeek(parser.getSeek() + chunkInfo.length-sizeof(uint32_t));
 
         size_t blockSize = version == EVersion::G2_2_6fix
                                 ? sizeof(polyData1Packed<PolyFlags2_6fix>)
@@ -355,22 +351,15 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
               }
             skipListEntry++;
             }
-          else
-          {
-          }
 
           // Goto next polygon using this weird shit
           blockPtr += blockSize + indicesSize * p.polyNumVertices;
           }
 
-        if(parser.getSeek()!=chunkEnd) { // FIXME: reading 4 byte too much in newWorld.zen - investigate
-          if(chunkEnd>parser.getSeek())
-            LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
-          else
-            LogInfo() << "Reverting " << parser.getSeek()-chunkEnd << " bytes - reading mesh might be a bit faulty";
-          }
+        if(parser.getSeek()!=chunkEnd)
+          LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
         
-        parser.setSeek(chunkEnd);  // Skip chunk, there could be more data here which is never read
+        parser.setSeek(chunkEnd); // Skip chunk, there could be more data here which is never read
         }
       break;
 

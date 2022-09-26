@@ -215,8 +215,6 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
         m_Vertices.resize(numVertices);
         parser.readBinaryRaw(m_Vertices.data(), numVertices * sizeof(float) * 3);
 
-        LogInfo() << "Found " << numVertices << " vertices";
-        
         if(parser.getSeek()!=chunkEnd)
           LogInfo() << "Skipping " << chunkEnd-parser.getSeek() << " bytes";
         }

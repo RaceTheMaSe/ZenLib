@@ -115,10 +115,8 @@ void ZenParser::readHeader(ZenHeader& header, ParserImpl*& impl) {
   }
 
 void ZenParser::readWorldMesh(oCWorldData& info) {
-  LogInfo() << "ZEN: Reading mesh...";
   m_pWorldMesh = std::make_unique<ZenLoad::zCMesh>();
   info.bspTree = zCBspTree::readObjectData(*this, m_pWorldMesh.get());
-  LogInfo() << "ZEN: Done reading mesh!";
   }
 
 /**
@@ -386,20 +384,16 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
     ZenParser::ChunkHeader header;
     readChunkStart(header);
 
-    LogInfo() << "oCWorld reading chunk: " << header.name;
-
     if(header.name == "MeshAndBsp") {
       readWorldMesh(info);
       readChunkEnd();
       isUncompressZen=false;
       }
     else if(header.name == "VobTree") {
-      // Read how many vobs this one has as child
       uint32_t numChildren = 0;
       getImpl()->readEntry("", numChildren);
       info.rootVobs.reserve(numChildren);
 
-      // Read children
       info.numVobsTotal = 0;
       info.rootVobs.resize(numChildren);
       for(uint32_t i=0; i<numChildren; i++) {
@@ -412,7 +406,6 @@ void ZenParser::readWorld(oCWorldData& info, FileVersion version) {
       readChunkEnd();
       }
     else if (header.name == "EndMarker") {
-      LogInfo() << "ZEN: Done reading world";
       readSuccess=true;
       }
     else {
@@ -489,7 +482,6 @@ size_t ZenParser::readVobTree(zCVobData& vob, FileVersion version) {
   vob.vobObjectID = header.objectID;
   zCVob::readObjectData(vob, *this, header, version);
 
-  // Read how many vobs this one has as child
   uint32_t numChildren = 0;
   getImpl()->readEntry("", numChildren);
   vob.childVobs.resize(numChildren);
@@ -513,16 +505,12 @@ void ZenParser::readWayNetData(zCWayNetData& info) {
     return;
     }
 
-  // First, read the waypoints array
   uint32_t numWaypoints = 0;
   getImpl()->readEntry("numWaypoints", numWaypoints);
-
-  LogInfo() << "Loading " << numWaypoints << (numWaypoints!=1 ? " freepoints" : " freepoint");
 
   std::unordered_map<uint32_t, size_t> wpRefMap;
   for(uint32_t i = 0; i < numWaypoints; i++) {
     ZenParser::ChunkHeader wph;
-    // These are always new ones
     readChunkStart(wph);
     zCWaypointData w = readWaypoint();
     info.waypoints.push_back(w);
@@ -535,8 +523,6 @@ void ZenParser::readWayNetData(zCWayNetData& info) {
   // Then, the edges (ways)
   uint32_t numWays = 0;
   getImpl()->readEntry("numWays", numWays);
-
-  LogInfo() << "Loading " << numWays << (numWays!=1 ? " edges" : " edge");
 
   for(uint32_t i = 0; i < numWays; i++) {
     size_t wp1 = 0, wp2 = 0;
@@ -567,8 +553,6 @@ void ZenParser::readWayNetData(zCWayNetData& info) {
       }
     info.edges.emplace_back(wp1, wp2);
     }
-
-  LogInfo() << "Done loading edges!";
   readChunkEnd();
   }
 

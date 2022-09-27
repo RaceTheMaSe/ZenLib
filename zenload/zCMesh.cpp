@@ -385,18 +385,6 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
           parser.setSeek(chunkEnd);  // Skip chunk
       }
     }
-  
-  // keep here or move to separate function and call this ... doesnt matter in the end
-  if(m_BBMin.x==0.f && m_BBMax.x==0.f) { // happens that its not read properly ... yet maybe .. or data is not available ... so calculate from all vertices ... costly but only needed once
-    for(const auto& v:getVertices()) {
-      m_BBMin.x = std::min(v.x,m_BBMin.x);
-      m_BBMin.y = std::min(v.y,m_BBMin.y);
-      m_BBMin.z = std::min(v.z,m_BBMin.z);
-      m_BBMax.x = std::max(v.x,m_BBMax.x);
-      m_BBMax.y = std::max(v.y,m_BBMax.y);
-      m_BBMax.z = std::max(v.z,m_BBMax.z);
-      }
-    }
   }
 
 void zCMesh::skip(ZenParser& parser) {

@@ -253,5 +253,10 @@ class zCMesh  {
        * @brief Lightmap entries
        */
     std::vector<zCLightMap> m_lightMaps;
+
+    /**
+		  * @brief Whether this mesh is using alphatest
+		  */
+    uint8_t m_IsUsingAlphaTest;
   };
 }  // namespace ZenLoad

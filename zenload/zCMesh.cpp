@@ -11,7 +11,6 @@
 #include "vdfs/fileIndex.h"
 #include "parserImpl.h"
 #include "utils/alignment.h"
-#include "utils/fixWindingOrder.h"
 #include "zenload/ztex2dds.h"
 
 using namespace ZenLoad;
@@ -164,10 +163,13 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
             LogInfo() << "Material name mismatch";
           }
 
-        // Note: There is a bool stored here in the G2-Formats, which says whether to use alphatesting or not
-        //      We just skip this for now - probably right ... isn't alphaFunc doing this per material already? whats the purpose then of a common alphaTest flag for all materials and which takes priority
-        if(version!=9 || parser.getZenHeader().version!=1) { // FIXME: where to get the most reliable g1 or g2 version info from?
-          bool useAlphaTest = parser.readBinaryByte()!=0; (void)useAlphaTest;
+        if(version!=9 || parser.getZenHeader().version!=1)
+          m_IsUsingAlphaTest = parser.readBinaryByte()!=0;
+        else
+          m_IsUsingAlphaTest = true; // G1 doesn't have this information, so unfortunately do it for all materials
+        if(m_IsUsingAlphaTest) {
+          for(auto& m : m_Materials)
+            m.alphaFunc = 1 /*AlphaTest*/;
           }
         // Restore old header and impl
         delete parser.getImpl();
@@ -412,9 +414,6 @@ void zCMesh::skip(ZenParser& parser) {
   }
 
 void zCMesh::packMesh(PackedMesh& mesh, float scale, bool removeDoubles) {
-  // make sure the winding order of all triangles is the same. otherwise for example the world mesh collision can be inconsistent
-  // fixWindingOrder<WorldTriangle,uint32_t>(mesh.triangles,mesh.indices);
-
 	std::vector<WorldVertex>& newVertices = mesh.vertices;
 	std::vector<uint32_t> newIndices;
 	newIndices.reserve(m_Indices.size());
@@ -527,4 +526,5 @@ void zCMesh::packMesh(PackedMesh& mesh, float scale, bool removeDoubles) {
 
 	mesh.bbox[0] = m_BBMin * scale;
 	mesh.bbox[1] = m_BBMax * scale;
+  mesh.isUsingAlphaTest = m_IsUsingAlphaTest;
   }

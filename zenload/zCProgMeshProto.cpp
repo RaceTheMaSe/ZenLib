@@ -6,7 +6,6 @@
 #include "zenParser.h"
 #include "utils/logger.h"
 #include "vdfs/fileIndex.h"
-#include "utils/fixWindingOrder.h"
 
 using namespace ZenLoad;
 
@@ -298,36 +297,15 @@ void zCProgMeshProto::packMesh(PackedMesh& mesh, bool noVertexId) const {
     meshIxStart += (uint32_t)sm.m_TriangleList.size()*3;
 
     // And get the indices
-    // pack.indices.resize(3*sm.m_TriangleList.size());
     for(auto i : sm.m_TriangleList) {
       for(unsigned short m_Wedge : i.m_Wedges) {
         uint32_t id = m_Wedge // Take wedge-index of submesh
                       + meshVxStart; // And add the starting location of the vertices for this submesh
         *ibo = id;
         ++ibo;
-        //pack.indices[i*3+j] = id;
         }
       }
 
     meshVxStart += uint32_t(sm.m_WedgeList.size());
     }
-  
-  // for(size_t i=0;i<mesh.indices.size();i+=3)
-  // {
-  //   WorldTriangle tri;
-  //   tri.vertices[0] = mesh.vertices[mesh.indices[i]];
-  //   tri.vertices[1] = mesh.vertices[mesh.indices[i+1]];
-  //   tri.vertices[2] = mesh.vertices[mesh.indices[i+2]];
-  //   // NOTE: not all data copied to triangle structure. only as much as needed to do the winding order check and potential fix
-  //   mesh.triangles.push_back(tri);
-  // }
-
-  // // make sure the winding order of all triangles is the same. otherwise for example the world mesh collision can be inconsistent
-  // const auto& fixedTris = fixWindingOrder<WorldTriangle,uint32_t>(mesh.triangles,mesh.indices);
-  // for(size_t i=0;i<fixedTris.size();i++)
-  // {
-  //   mesh.vertices[i*3+0]=fixedTris[i].vertices[0];
-  //   mesh.vertices[i*3+1]=fixedTris[i].vertices[1];
-  //   mesh.vertices[i*3+2]=fixedTris[i].vertices[2];
-  // }
   }

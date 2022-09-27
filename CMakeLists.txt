@@ -4,12 +4,10 @@ project(ZenLib)
 include(ExternalProject)
 include(cmake/clang-format.cmake)
 
-set(ZENLIB_BUILD_EXAMPLES OFF CACHE BOOL "Whether to build the examples")
-set(ZENLIB_BUILD_TESTS OFF CACHE BOOL "Whether to build tests")
 set(PHYSFS_BUILD_SHARED OFF)
 cmake_policy(SET CMP0077 NEW)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 # 3rd-party dependencies
 set(PHYSFS_BUILD_TEST OFF CACHE STRING "" FORCE)
@@ -23,12 +21,3 @@ add_subdirectory(utils)
 add_subdirectory(vdfs)
 add_subdirectory(zenload)
 add_subdirectory(daedalus)
-
-# Tests
-if(ZENLIB_BUILD_TESTS)
-  add_subdirectory(tests)
-endif()
-
-if(ZENLIB_BUILD_EXAMPLES)
-  add_subdirectory(samples)
-endif()

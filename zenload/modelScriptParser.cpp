@@ -167,7 +167,7 @@ MdsParser::Chunk MdsParserTxt::beginChunk() {
     else if(tt==TK_End) {
       const auto& t = tokenStack.top(); (void)t;
       if(tokenStack.top()!=TK_Begin)
-        LogInfo() << "Syntax error";
+        LogInfo() << "Mds Syntax error";
       tokenStack.pop();
       openChunks.pop();
       }
@@ -176,7 +176,7 @@ MdsParser::Chunk MdsParserTxt::beginChunk() {
       }
     else if(tt==TK_BracketR || (tt==TK_CRLF && tokenStack.size() && tokenStack.top()==TK_BracketL /* cope with missing closing bracket*/)) {
       if(tokenStack.top()!=TK_BracketL)
-        LogInfo() << "Syntax error";
+        LogInfo() << "Mds Syntax error";
       tokenStack.pop();
       }
     else if(tt==TK_Name) {
@@ -200,7 +200,7 @@ void MdsParserTxt::beginArgs() {
       return;
       }
     else
-      LogInfo() << "Syntax error";
+      LogInfo() << "Mds Syntax error";
     }
   }
 
@@ -211,7 +211,7 @@ void MdsParserTxt::endArgs() {
     if(tt==TK_BracketR) {
       const auto& t = tokenStack.top();
       if(tokenStack.top()!=TK_BracketL){
-        LogInfo() << "Syntax error" << t << " and " << tt;
+        LogInfo() << "Mds Syntax error" << t << " and " << tt;
         zen.setSeek(seek); // unget
         }
       tokenStack.pop();
@@ -425,7 +425,7 @@ MdsParser::Chunk MdsParser::parse() {
       case CHUNK_EOF:
         break;
       case CHUNK_ERROR:
-        LogInfo() << "Error chunk";
+        LogInfo() << "Mds Error chunk";
         break;
       case CHUNK_MLID_MODELMESH:
       case CHUNK_MLID_MDM_SOURCE:

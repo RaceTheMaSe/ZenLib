@@ -43,7 +43,8 @@ public:
   enum class FileVersion
     {
     Gothic1,
-    Gothic2
+    Gothic2,
+    Gothic1Sequel
     };
 
   enum ZenClass

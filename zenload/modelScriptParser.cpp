@@ -165,8 +165,7 @@ MdsParser::Chunk MdsParserTxt::beginChunk() {
       openChunks.push(chunks.top());
       }
     else if(tt==TK_End) {
-      const auto& t = tokenStack.top(); (void)t;
-      if(tokenStack.top()!=TK_Begin)
+      if(tokenStack.size() == 0 || tokenStack.top()!=TK_Begin)
         LogInfo() << "Mds Syntax error";
       tokenStack.pop();
       openChunks.pop();
@@ -175,7 +174,7 @@ MdsParser::Chunk MdsParserTxt::beginChunk() {
       tokenStack.push(tt);
       }
     else if(tt==TK_BracketR || (tt==TK_CRLF && tokenStack.size() && tokenStack.top()==TK_BracketL /* cope with missing closing bracket*/)) {
-      if(tokenStack.top()!=TK_BracketL)
+      if(tokenStack.size() == 0 || tokenStack.top()!=TK_BracketL)
         LogInfo() << "Mds Syntax error";
       tokenStack.pop();
       }

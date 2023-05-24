@@ -16,7 +16,7 @@ zCFont::zCFont(const char *fileName, const VDFS::FileIndex& fileIndex) {
   fileIndex.getFileData(fileName, data);
 
   if (data.empty()) {
-    // LogInfo() << "Failed to find font " << fileName; // FIXME: happens when paintEvent in gameMenu is called early and from render thread.
+    LogInfo() << "Failed to find font \"" << fileName << "\"";
     return;
     }
 

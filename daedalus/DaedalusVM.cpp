@@ -91,9 +91,9 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         break;
         }
       case EParOp_AssignInt: {
-        auto&   a = popIntVar();
-        int32_t b = popDataValue();
-        a = b;
+        auto&   v = popIntVar();
+        a = popDataValue();
+        v = a;
         break;
         }
       case EParOp_LogOr:
@@ -144,28 +144,28 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         }
       case EParOp_AssignAdd:{
         int32_t& v = popIntVar();
-        int32_t  a = popDataValue();
+        a = popDataValue();
         v += a;
         break;
         }
       case EParOp_AssignSubtract: {
         int32_t& v = popIntVar();
-        int32_t  a = popDataValue();
+        a = popDataValue();
         v -= a;
         break;
         }
       case EParOp_AssignMultiply: {
         int32_t& v = popIntVar();
-        int32_t  a = popDataValue();
+        a = popDataValue();
         v *= a;
         break;
         }
       case EParOp_AssignDivide: {
         int32_t& v = popIntVar();
-        int32_t  b = popDataValue();
-        if(b==0)
+        a = popDataValue();
+        if(a==0)
           terminateScript<BadMath>();
-        v /= b;
+        v /= a;
         break;
         }
       case EParOp_Unary_Plus:
@@ -255,15 +255,15 @@ void DaedalusVM::eval(size_t PC, bool initScripts, std::function<void(size_t)> l
         LogError() << "EParTok_AssignStringRef not implemented!";
         break;
       case EParTok_AssignFunc: {
-        auto&   a = popIntVar();
-        int32_t b = popDataValue();
-        a = b;
+        auto&   v = popIntVar();
+        a = popDataValue();
+        v = a;
         break;
         }
       case EParTok_AssignFloat: {
-        float& a = popFloatVar();
-        float  b = popFloatValue();
-        a = b;
+        float& v = popFloatVar();
+        float  c = popFloatValue();
+        v = c;
         break;
         }
       case EParTok_AssignInstance: {

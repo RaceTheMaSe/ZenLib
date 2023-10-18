@@ -2,6 +2,7 @@
 
 #include "modelAnimationParser.h"
 #include "zenParser.h"
+#include "utils/logger.h"
 
 namespace ZenLoad {
 
@@ -30,12 +31,15 @@ ModelAnimationParser::EChunkType ModelAnimationParser::parse() {
     case CHUNK_RAWDATA:
       readRawData();
       return CHUNK_RAWDATA;
+    case CHUNK_EOF:
+      return CHUNK_EOF;
+    case CHUNK_ERROR:
+      LogError() << "Reading more than expected - might produce an overflow!";
+      return CHUNK_ERROR;
     default:
       m_Zen.setSeek(chunkEnd);
       return parse();  // skip unknown chunk
     }
-
-  return CHUNK_EOF;
   }
 
 void ModelAnimationParser::readHeader() {

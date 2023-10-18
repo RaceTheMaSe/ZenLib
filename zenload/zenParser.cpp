@@ -489,7 +489,7 @@ size_t ZenParser::readVobTree(zCVobData& vob, FileVersion version) {
   size_t num = 0;
   for(uint32_t i=0; i<numChildren; i++)
     num += readVobTree(vob.childVobs[i],version);
-  return numChildren+1;
+  return num+1;
   }
 
 void ZenParser::readWayNetData(zCWayNetData& info) {

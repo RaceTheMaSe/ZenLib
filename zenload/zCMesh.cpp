@@ -327,7 +327,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                 else {
                   // Triangulate a triangle-fan
                   //for(unsigned int i = p.polyNumVertices - 2; i >= 1; i--)
-                  for (int idx = 1; idx < p.polyNumVertices - 1; i++) {
+                  for (int idx = 1; idx < p.polyNumVertices - 1; idx++) {
                     m_Indices.emplace_back(p.indices[0].VertexIndex);
                     m_Indices.emplace_back(p.indices[idx].VertexIndex);
                     m_Indices.emplace_back(p.indices[idx + 1].VertexIndex);
@@ -344,8 +344,8 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
 
                     WorldTriangle triangle;
                     triangle.flags = p.flags;
-                    uint32_t indices[] = {p.indices[0].VertexIndex, p.indices[i].VertexIndex,
-                                      p.indices[i + 1].VertexIndex};
+                    uint32_t indices[] = {p.indices[0].VertexIndex, p.indices[idx].VertexIndex,
+                                      p.indices[idx + 1].VertexIndex};
 
                     // Gather vertex information
                     for (int v = 0; v < 3; v++) {

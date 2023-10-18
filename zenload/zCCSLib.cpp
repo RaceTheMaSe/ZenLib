@@ -212,7 +212,7 @@ static void readEventMsgMovement(oCMsgMovement& block, ZenParser& parser, const 
   auto& rd = *parser.getImpl();
   switch (block.subType) {
     case (uint32_t)MovementEventTypes::EV_SETWALKMODE: {
-      rd.readEntry("targetMode", block.targetMode, true);
+      rd.readEntry("targetMode", block.targetMode, true); break;
       }
     case (uint32_t)MovementEventTypes::EV_GOTOPOS:
     case (uint32_t)MovementEventTypes::EV_JUMP: {

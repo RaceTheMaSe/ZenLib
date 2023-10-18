@@ -336,13 +336,18 @@ struct PARSymbol {
   InstancePtr              instance;
   uint32_t                 parent             = 0xFFFFFFFF;  // 0xFFFFFFFF (-1) = none
 
-  void warnIndexOutOfBounds(size_t index, size_t size) {
+  void warnIndexOutOfBounds(size_t index, size_t size) const {
     LogWarn() << (const char*) "DaedalusVM: index out of range for: " << name << "[" << size << "], index = " << index;
     }
 
   template <class T>
   T* getClassMember(void* baseAddr) {
     return reinterpret_cast<T*>(reinterpret_cast<char*>(baseAddr) + classMemberOffset);
+    }
+
+  template <class T>
+  const T* getClassMember(void* baseAddr) const {
+    return reinterpret_cast<const T*>(reinterpret_cast<char*>(baseAddr) + classMemberOffset);
     }
 
   int32_t&       getInt(size_t idx = 0, void* baseAddr = nullptr);
@@ -355,6 +360,9 @@ struct PARSymbol {
 
   template <typename T>
   DataContainer<T>& getDataContainer();
+
+  template <typename T>
+  const DataContainer<T>& getDataContainer() const;
 
 #if !defined(__GNUC__) && !defined(ANDROID) || (defined(__clang__))
   template <>
@@ -371,11 +379,53 @@ struct PARSymbol {
   DataContainer<ZString>& getDataContainer() {
     return this->strData;
     }
+
+  template <>
+  const DataContainer<ZString>& getDataContainer() const {
+    return this->strData;
+    }
+  
+  template <>
+  const DataContainer<int32_t>& getDataContainer() const {
+    return this->intData;
+    }
+
+  template <>
+  const DataContainer<float>& getDataContainer() const {
+    return this->floatData;
+    }
 #endif
 
   template <class T>
   const T& getValue(size_t idx = 0, void* baseAddr = nullptr) const {
-    return getValue<T>(idx,baseAddr);
+    bool isClassVar = this->hasEParFlag(EParFlag_ClassVar);
+    if(isClassVar) {
+      bool isRegistered = classMemberOffset != -1;
+      if(!isRegistered) {
+        LogWarn() << "DaedalusVM: class data member not registered: " << name;
+        }
+      else if (baseAddr == nullptr) {
+        LogWarn() << "DaedalusVM: base address of C_Class is nullptr: " << name;
+        static T empty={};
+        return empty; // FIXME: this comes up often in G1, according to https://wiki.worldofgothic.de/doku.php?id=daedalus undefined variables are zero initialized, so lowered log severity to warn
+        }
+      else if (idx >= classMemberArraySize) {
+        warnIndexOutOfBounds(idx, classMemberArraySize);
+        }
+      else {
+        return getClassMember<T>(baseAddr)[idx];
+        }
+      }
+
+    auto& data = getDataContainer<T>();
+    // read from symbol's data if not isClassVar or the above failed. (the latter should not happen)
+    if(data.size()<=idx) {
+      if(!isClassVar)  // only print error message if we did not fall through from above
+        warnIndexOutOfBounds(idx, data.size());
+      static T empty={};
+      return empty;
+      }
+    return data[idx];
   }
 
   template <class T>
@@ -395,7 +445,6 @@ struct PARSymbol {
         }
       else if (idx >= classMemberArraySize) {
         warnIndexOutOfBounds(idx, classMemberArraySize);
-        // LogError() << "DaedalusVM: index out of range for registered class data member: " << name;
         }
       else {
         return getClassMember<T>(baseAddr)[idx];

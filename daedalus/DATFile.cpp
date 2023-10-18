@@ -359,4 +359,19 @@ template <>
 DataContainer<ZString>& PARSymbol::getDataContainer() {
   return this->strData;
   }
+
+template <>
+const DataContainer<ZString>& PARSymbol::getDataContainer() const {
+  return this->strData;
+  }
+
+template <>
+const DataContainer<int32_t>& PARSymbol::getDataContainer() const {
+  return this->intData;
+  }
+
+template <>
+const DataContainer<float>& PARSymbol::getDataContainer() const {
+  return this->floatData;
+  }
 #endif

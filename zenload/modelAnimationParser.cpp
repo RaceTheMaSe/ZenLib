@@ -18,7 +18,7 @@ ModelAnimationParser::EChunkType ModelAnimationParser::parse() {
   if (m_Zen.getSeek() >= m_Zen.getFileSize())
     return CHUNK_EOF;
 
-  BinaryChunkInfo chunkInfo;
+  BinaryChunkInfo chunkInfo = {};
   m_Zen.readStructure(chunkInfo);
 
   // store position after header so that we can skip the chunk
@@ -33,9 +33,6 @@ ModelAnimationParser::EChunkType ModelAnimationParser::parse() {
       return CHUNK_RAWDATA;
     case CHUNK_EOF:
       return CHUNK_EOF;
-    case CHUNK_ERROR:
-      LogError() << "Reading more than expected - might produce an overflow!";
-      return CHUNK_ERROR;
     default:
       m_Zen.setSeek(chunkEnd);
       return parse();  // skip unknown chunk

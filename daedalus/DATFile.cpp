@@ -109,12 +109,10 @@ void DATFile::readSymTable(ZenLoad::ZenParser& input) {
 
 void DATFile::readStack(ZenLoad::ZenParser& input) {
   size_t stackSize = input.readBinaryDWord();
-  size_t seek      = 0;
 
   while(input.getSeek()<input.getFileSize()) {
     PARStackOpCode s={};
     s.op = static_cast<EParOp>(input.readBinaryByte());
-    seek += sizeof(uint8_t);
     s.opSize = sizeof(uint8_t);
 
     switch(s.op) {
@@ -145,7 +143,6 @@ void DATFile::readStack(ZenLoad::ZenParser& input) {
         break;
       }
 
-    seek += s.opSize;
     code.push_back(s);
     }
 

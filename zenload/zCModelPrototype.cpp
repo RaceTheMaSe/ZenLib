@@ -185,7 +185,8 @@ void zCModelPrototype::readObjectData(ZenParser& parser) {
   auto readModel = [&]() {
     while (parser.getSeek() < parser.getFileSize()) {
       std::string line = parser.readLine(true);
-      std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+      for(auto& c : line)
+        c = (char)std::tolower(c);
 
       LogInfo() << "MDS-Line: " << line;
 
@@ -209,7 +210,8 @@ void zCModelPrototype::readObjectData(ZenParser& parser) {
 
   while (parser.getSeek() < parser.getFileSize()) {
     std::string line = parser.readLine(true);
-    std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+    for(auto& c : line)
+        c = (char)std::tolower(c);
 
     LogInfo() << "MDS-Line: " << line;
 

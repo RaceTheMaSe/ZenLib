@@ -72,7 +72,7 @@ bool ZenLoad::ParserImpl::parseHeader(ZenLoad::ZenParser::ChunkHeader& header, c
         }
       case T_Version: {
         tokType        = T_Id;
-        header.version = std::atoi(tok);
+        header.version = (uint16_t)std::atoi(tok);
         break;
         }
       case T_Id: {

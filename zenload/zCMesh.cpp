@@ -148,7 +148,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
 
           // Skip chunk headers - we know these are zCMaterial
           uint32_t chunksize = parser.readBinaryDWord(); (void)chunksize;
-          uint16_t version = parser.readBinaryWord();
+          uint16_t mversion = parser.readBinaryWord();
           uint32_t objectIndex = parser.readBinaryDWord(); (void)objectIndex;
 
           parser.skipSpaces();
@@ -158,7 +158,7 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
           std::string classname = parser.readLine();
 
           // Save into vector
-          m_Materials.emplace_back(zCMaterial::readObjectData(parser, version));
+          m_Materials.emplace_back(zCMaterial::readObjectData(parser, mversion));
           if(aName!=m_Materials.back().matName)
             LogInfo() << "Material name mismatch";
           }
@@ -327,14 +327,14 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
                 else {
                   // Triangulate a triangle-fan
                   //for(unsigned int i = p.polyNumVertices - 2; i >= 1; i--)
-                  for (int i = 1; i < p.polyNumVertices - 1; i++) {
+                  for (int idx = 1; idx < p.polyNumVertices - 1; i++) {
                     m_Indices.emplace_back(p.indices[0].VertexIndex);
-                    m_Indices.emplace_back(p.indices[i].VertexIndex);
-                    m_Indices.emplace_back(p.indices[i + 1].VertexIndex);
+                    m_Indices.emplace_back(p.indices[idx].VertexIndex);
+                    m_Indices.emplace_back(p.indices[idx + 1].VertexIndex);
 
                     m_FeatureIndices.emplace_back(p.indices[0].FeatIndex);
-                    m_FeatureIndices.emplace_back(p.indices[i].FeatIndex);
-                    m_FeatureIndices.emplace_back(p.indices[i + 1].FeatIndex);
+                    m_FeatureIndices.emplace_back(p.indices[idx].FeatIndex);
+                    m_FeatureIndices.emplace_back(p.indices[idx + 1].FeatIndex);
 
                     // Save material index for the written triangle
                     m_TriangleMaterialIndices.push_back(p.materialIndex);
@@ -344,16 +344,16 @@ void zCMesh::readObjectData(ZenParser& parser, const std::vector<size_t>& skipPo
 
                     WorldTriangle triangle;
                     triangle.flags = p.flags;
-                    uint32_t idx[] = {p.indices[0].VertexIndex, p.indices[i].VertexIndex,
+                    uint32_t indices[] = {p.indices[0].VertexIndex, p.indices[i].VertexIndex,
                                       p.indices[i + 1].VertexIndex};
 
                     // Gather vertex information
                     for (int v = 0; v < 3; v++) {
-                      triangle.vertices[v].Position = m_Vertices[idx[v]];
-                      triangle.vertices[v].Color = m_Features[idx[v]].lightStat;
-                      triangle.vertices[v].TexCoord = ZMath::float2(m_Features[idx[v]].uv[0],
-                                                                    m_Features[idx[v]].uv[1]);
-                      triangle.vertices[v].Normal = m_Features[idx[v]].vertNormal;
+                      triangle.vertices[v].Position = m_Vertices[indices[v]];
+                      triangle.vertices[v].Color = m_Features[indices[v]].lightStat;
+                      triangle.vertices[v].TexCoord = ZMath::float2(m_Features[indices[v]].uv[0],
+                                                                    m_Features[indices[v]].uv[1]);
+                      triangle.vertices[v].Normal = m_Features[indices[v]].vertNormal;
                       }
 
                     // Start filling in the flags

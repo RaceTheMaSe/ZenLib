@@ -231,7 +231,7 @@ void zCModelMeshLib::packMesh(PackedSkeletalMesh& mesh) const
         size_t indexBase = mesh.indices.size();
         for (auto index : internalMesh.indices)
         {
-            mesh.indices.push_back(index + vertexBase);
+            mesh.indices.push_back(uint32_t(index + vertexBase));
         }
 
         for (const auto& s : internalMesh.subMeshes)

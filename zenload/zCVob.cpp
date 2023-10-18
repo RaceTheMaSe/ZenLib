@@ -784,7 +784,7 @@ static void read_ocVisFX_MultiTarget(zCVobData &info, ZenParser &parser, ZenPars
   info.vobType = zCVobData::VT_ocVisFX_MultiTarget;
   }
 
-static void read_zCLensFlare(zCVobData &info, ZenParser &parser, ZenParser::FileVersion version) {
+static void read_zCLensFlare(zCVobData &info, ZenParser &parser, ZenParser::FileVersion /*version*/) {
   info.vobType = zCVobData::VT_zCLensFlare;
   auto& rd = *parser.getImpl();
 
@@ -815,7 +815,7 @@ static void read_zCLensFlareFX(zCVobData &info, ZenParser &parser, ZenParser::Fi
   rd.readEntry("fadeScale",info.zCFlare.posScale,true);
   }
 
-static void read_zReference(zCVobData &info, ZenParser &parser, const ZenParser::ChunkHeader& header, ZenParser::FileVersion version) {
+static void read_zReference(zCVobData &info, ZenParser &/*parser*/, const ZenParser::ChunkHeader& header, ZenParser::FileVersion /*version*/) {
   info.vobType = zCVobData::VT_zReference;
   info.aiReference = header.objectID; // FIXME: aiReference may be the wrong field to write into
   }

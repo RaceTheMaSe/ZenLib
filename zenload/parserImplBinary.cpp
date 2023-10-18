@@ -66,7 +66,7 @@ bool ParserImplBinary::readString(char* buf, size_t size) {
 /**
  * @brief Reads data of the expected type. Throws if the read type is not the same as specified and not 0
  */
-void ParserImplBinary::readEntryImpl(const char* /*expectedName*/, void* target, size_t targetSize, EZenValueType expectedType, bool optional) {
+void ParserImplBinary::readEntryImpl(const char* /*expectedName*/, void* target, size_t targetSize, EZenValueType expectedType, bool /*optional*/) {
   // if(optional) // FIXME: handle this
   //   LogInfo() << "Reading optional in binary archive - not implemented";
 
@@ -87,6 +87,6 @@ void ParserImplBinary::readEntryImpl(const char* /*expectedName*/, void* target,
 /**
 * @brief Reads the type of a single entry
 */
-void ParserImplBinary::readEntryType(EZenValueType& outtype, size_t& size)
+void ParserImplBinary::readEntryType(EZenValueType& /*outtype*/, size_t& /*size*/)
 {
 }

@@ -150,9 +150,9 @@ void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size
     }
 
   if(expectedName!=nullptr && expectedName[0]!='\0') {
-    for(size_t i=0; ; ++i) {
-      char e = expectedName[i];
-      char n = name[i];
+    for(size_t j=0; ; ++j) {
+      char e = expectedName[j];
+      char n = name[j];
       if('A'<=e && e<='Z')
         e = char(e-'A'+'a');
       if('A'<=n && n<='Z')
@@ -165,7 +165,7 @@ void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size
         else
           throw std::runtime_error(std::string("Value name does not match expected name. Value:") + name + " Expected: " + expectedName);
         }
-      if(expectedName[i]=='\0')
+      if(expectedName[j]=='\0')
         break;
       }
     }
@@ -240,7 +240,7 @@ void ParserImplASCII::readEntryImpl(const char* expectedName, void* target, size
     case ZVT_15:
       break;
     case ZVT_ENUM:
-      *reinterpret_cast<uint8_t*>(target) = std::stoi(value);
+      *reinterpret_cast<uint8_t*>(target) = (uint8_t)std::stoi(value);
       break;
     case ZVT_HASH:
       break;
@@ -352,7 +352,7 @@ void ParserImplASCII::parseColor(const char* line, uint8_t* target, size_t targe
     while(*line==' ' || *line=='\t')
       ++line;
     size_t pos = 0;
-    target[i] = std::stoi(line,&pos);
+    target[i] = (uint8_t)std::stoi(line,&pos);
     line+=pos;
     }
   }
@@ -370,7 +370,7 @@ void ParserImplASCII::parseRawVec(const char* line, uint8_t* target, size_t targ
         c[r] = line[r]-'a'+10;
       }
     line+=2;
-    target[i] = c[0]*16+c[1];
+    target[i] = uint8_t(c[0]*16+c[1]);
     }
   }
 

@@ -16,8 +16,8 @@ MdsParserTxt::MdsParserTxt(ZenParser &zen)
   buf.reserve(8);
   }
 
-MdsParserTxt::TokType MdsParserTxt::nextTok(std::string& buf) {
-  buf.clear();
+MdsParserTxt::TokType MdsParserTxt::nextTok(std::string& buffer) {
+  buffer.clear();
   bool loop=true;
   while(loop && zen.getRemainBytes()>0) {
     loop = false;
@@ -41,11 +41,11 @@ MdsParserTxt::TokType MdsParserTxt::nextTok(std::string& buf) {
       return TokType::TK_CRLF;
       }
     else if(('a'<=first && first<='z') || ('A'<=first && first<='Z') || first=='_' || first=='*' || first=='.' ) {
-      buf.push_back(first);
+      buffer.push_back(first);
       while(zen.getRemainBytes()>0) {
         const char cur = zen.peekChar();
         if(('a'<=cur && cur<='z') || ('A'<=cur && cur<='Z') || cur=='*' || cur=='.' || cur=='_' || ('0'<=cur && cur<='9')) {
-          buf.push_back(zen.readChar());
+          buffer.push_back(zen.readChar());
           } else {
           break;
           }
@@ -54,11 +54,11 @@ MdsParserTxt::TokType MdsParserTxt::nextTok(std::string& buf) {
       }
     else if('0'<=first && first<='9') {
       bool flt=false;
-      buf.push_back(first);
+      buffer.push_back(first);
       while(zen.getRemainBytes()>0) {
         const char cur = zen.peekChar();
         if(('0'<=cur && cur<='9') || (cur=='.' && !flt)) {
-          buf.push_back(zen.readChar());
+          buffer.push_back(zen.readChar());
           if(cur=='.')
             flt=true;
           } else {
@@ -76,16 +76,16 @@ MdsParserTxt::TokType MdsParserTxt::nextTok(std::string& buf) {
           // Invalid syntax
           break; // G1 wolf.mds is missing closing " - need to workaround it
           }
-        buf.push_back(cur);
+        buffer.push_back(cur);
         }
-      for(size_t i=0;i<buf.size();) { // sanitize input
-        if(buf[i]=='\t')
-          buf[i]=' ';
+      for(size_t i=0;i<buffer.size();) { // sanitize input
+        if(buffer[i]=='\t')
+          buffer[i]=' ';
         else
           ++i;
         }
-      while(buf.size()>0 && std::isspace(buf[buf.size()-1])) // clean trailing whitespaces
-          buf.erase(buf.size()-1);
+      while(buffer.size()>0 && std::isspace(buffer[buffer.size()-1])) // clean trailing whitespaces
+          buffer.erase(buffer.size()-1);
       return TokType::TK_String;
       }
     else if(first=='(') {

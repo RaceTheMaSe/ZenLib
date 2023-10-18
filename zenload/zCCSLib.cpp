@@ -29,7 +29,7 @@ zCCSLib::zCCSLib(ZenParser &parser, ZenLoad::ZenParser::FileVersion version) {
   readObjectData(parser,version);
   }
 
-static void readEventMessage(zCEventMessage& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSAtomicBlock& parent) {
+static void readEventMessage(zCEventMessage& block, ZenParser& parser, const ZenParser::ChunkHeader &/*header*/, ZenParser::FileVersion version, zCCSAtomicBlock& /*parent*/) {
   auto& rd = *parser.getImpl();
   if(version==ZenParser::FileVersion::Gothic1)
     rd.readEntry("subType", reinterpret_cast<uint8_t&>(block.subType));
@@ -267,7 +267,7 @@ static void readEventMusicController(zCEventMusicControler& block, ZenParser& pa
   block.type = zCEventMessage::EventMsgType::MT_MusicController;
   }
 
-static void readAtomicBlock(zCCSAtomicBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& parent) {
+static void readAtomicBlock(zCCSAtomicBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &/*header*/, ZenParser::FileVersion version, zCCSBlock& /*parent*/) {
   // assumed to only contain one event block
   ZenParser::ChunkHeader blkHdr;
   parser.readChunkStart(blkHdr);
@@ -397,7 +397,7 @@ static void readAtomicBlock(zCCSAtomicBlock& block, ZenParser& parser, const Zen
   }
 
 static void readCSSyncBlock(zCCSSyncBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& parent);
-static void readCSBlock(zCCSBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version) {
+static void readCSBlock(zCCSBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &/*header*/, ZenParser::FileVersion version) {
   uint32_t numOfBlocks = 0;
   ReadObjectProperties(parser,
   Prop("blockName"  , block.blockName),
@@ -430,7 +430,7 @@ static void readCSBlock(zCCSBlock& block, ZenParser& parser, const ZenParser::Ch
     }
   }
 
-static void readCSSyncBlock(zCCSSyncBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& parent) {
+static void readCSSyncBlock(zCCSSyncBlock& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& /*parent*/) {
   readCSBlock(block,parser,header,version);
   uint32_t numOfAss=0;
   ReadObjectProperties(parser,Prop("numOfAss", numOfAss));
@@ -439,7 +439,7 @@ static void readCSSyncBlock(zCCSSyncBlock& block, ZenParser& parser, const ZenPa
     ReadObjectProperties(parser, Prop((std::string("roleAss")+std::to_string(i)).c_str(),block.roleAss[i]));
   }
 
-static void readCSProps(zCCSProps& props, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& parent) {
+static void readCSProps(zCCSProps& props, ZenParser& parser, const ZenParser::ChunkHeader &/*header*/, ZenParser::FileVersion /*version*/, zCCSBlock& /*parent*/) {
   ZenParser::ChunkHeader roleHdr;
   parser.readChunkStart(roleHdr);
 
@@ -458,7 +458,7 @@ static void readCSProps(zCCSProps& props, ZenParser& parser, const ZenParser::Ch
   parser.readChunkEnd();
   }
 
-static void readCSRole(zCCSRole& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& parent) {
+static void readCSRole(zCCSRole& block, ZenParser& parser, const ZenParser::ChunkHeader &/*header*/, ZenParser::FileVersion /*version*/, zCCSBlock& /*parent*/) {
   ZenParser::ChunkHeader roleHdr;
   parser.readChunkStart(roleHdr);
 
@@ -475,7 +475,7 @@ static void readCSRole(zCCSRole& block, ZenParser& parser, const ZenParser::Chun
   parser.readChunkEnd();
   }
 
-static void readCSRoleVob(zCCSRoleVob& block, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version, zCCSBlock& parent) {
+static void readCSRoleVob(zCCSRoleVob& /*block*/, ZenParser& /*parser*/, const ZenParser::ChunkHeader &/*header*/, ZenParser::FileVersion /*version*/, zCCSBlock& /*parent*/) {
   }
 
 static void readCutsceneData(zCCutscene& cutscene, ZenParser& parser, const ZenParser::ChunkHeader &header, ZenParser::FileVersion version) {
@@ -540,8 +540,9 @@ void zCCSLib::readObjectData(ZenParser& parser, ZenLoad::ZenParser::FileVersion 
   }
 
 void zCCSLib::addMessageByName(const std::string& name, oCMsgConversation&& msg) {
-  auto nameUp = name;
-  std::transform(nameUp.begin(), nameUp.end(), nameUp.begin(), ::toupper);
+  std::string nameUp = name;
+  for(auto& c : nameUp)
+        c = (char)std::toupper(c);
   const auto& fileExt = nameUp.find(".WAV"); // or make it even more generalized by using a fileext helper function here
   if(fileExt!=std::string::npos && !name.empty()) {
     nameUp=nameUp.substr(0,fileExt);
@@ -551,16 +552,18 @@ void zCCSLib::addMessageByName(const std::string& name, oCMsgConversation&& msg)
   }
 
 const oCMsgConversation& zCCSLib::getMessageByName(const Daedalus::ZString& name) {
-  std::string nameUppered = name.c_str();
-  std::transform(nameUppered.begin(), nameUppered.end(), nameUppered.begin(), ::toupper);
-  assert(m_MessagesByName.find(nameUppered) != m_MessagesByName.end());
-  size_t idx = m_MessagesByName[nameUppered];
+  std::string nameUp = name.c_str();
+  for(auto& c : nameUp)
+        c = (char)std::toupper(c);
+  assert(m_MessagesByName.find(nameUp) != m_MessagesByName.end());
+  size_t idx = m_MessagesByName[nameUp];
   assert(idx<conversations.size());
   return conversations[idx];
   }
 
 bool zCCSLib::messageExists(const Daedalus::ZString& name) const {
-  std::string nameUppered = name.c_str();
-  std::transform(nameUppered.begin(), nameUppered.end(), nameUppered.begin(), ::toupper);
-  return m_MessagesByName.find(nameUppered) != m_MessagesByName.end();
+  std::string nameUp = name.c_str();
+  for(auto& c : nameUp)
+        c = (char)std::toupper(c);
+  return m_MessagesByName.find(nameUp) != m_MessagesByName.end();
   }

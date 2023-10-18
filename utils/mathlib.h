@@ -4,7 +4,11 @@
 #include <cstring>
 
 #if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic ignored "-Wpedantic" // silence warning about ISO C++ prohibits anonymous structs
+#pragma GCC diagnostic ignored "-Wpedantic" // ISO C++ prohibits anonymous structs
+#endif
+#if defined(_MSC_VER)
+#pragma warning( push )
+#pragma warning(disable: 4201) // nonstandard extension used: nameless struct/union
 #endif
 
 namespace ZMath
@@ -347,3 +351,7 @@ namespace ZMath
 
   std::ostream& operator<<(std::ostream& out, Matrix& m);
 }  // namespace ZMath
+
+#if defined(_MSC_VER)
+#pragma warning( pop )
+#endif

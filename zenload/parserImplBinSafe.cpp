@@ -271,7 +271,7 @@ void ParserImplBinSafe::readEntryImpl(const char *expectedName, void* target, si
     case ZVT_15:
       break;
     case ZVT_ENUM:
-      *reinterpret_cast<uint8_t*>(target) = m_pParser->readBinaryDWord();
+      *reinterpret_cast<uint8_t*>(target) = (uint8_t)m_pParser->readBinaryDWord();
       break;
     }
 

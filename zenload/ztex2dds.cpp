@@ -11,15 +11,14 @@
 #include <inttypes.h>
 #include <math.h>
 #include <string.h>
-#include "utils/logger.h"
 #include "zenload/zenParser.h"
 
-#define ZTEX2DDS_ERROR_NONE 0   /* No Error                  */
-#define ZTEX2DDS_ERROR_ARGS 1   /* Invalid Params / Syntax   */
-#define ZTEX2DDS_ERROR_OPEN 2   /* Failed to Open Input      */
-#define ZTEX2DDS_ERROR_READ 4   /* Failed to Read Input      */
+#define ZTEX2DDS_ERROR_NONE   0 /* No Error                  */
+#define ZTEX2DDS_ERROR_ARGS   1 /* Invalid Params / Syntax   */
+#define ZTEX2DDS_ERROR_OPEN   2 /* Failed to Open Input      */
+#define ZTEX2DDS_ERROR_READ   4 /* Failed to Read Input      */
 #define ZTEX2DDS_ERROR_CREATE 5 /* Failed to Create Output   */
-#define ZTEX2DDS_ERROR_WRITE 6  /* Failed to Write Output    */
+#define ZTEX2DDS_ERROR_WRITE  6 /* Failed to Write Output    */
 #define ZTEX2DDS_ERROR_FORMAT 7 /* Invalid Input File Format */
  
 namespace ZenLoad

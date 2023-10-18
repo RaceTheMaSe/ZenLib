@@ -117,7 +117,7 @@ void zCProgMeshProto::readObjectData(ZenParser& parser) {
 
           // Skip chunk headers - we know these are zCMaterial
           uint32_t chunksize   = p2.readBinaryDWord();
-          uint16_t version     = p2.readBinaryWord();
+          uint16_t mversion    = p2.readBinaryWord();
           uint32_t objectIndex = p2.readBinaryDWord();
           (void)chunksize;
           (void)objectIndex;
@@ -129,7 +129,7 @@ void zCProgMeshProto::readObjectData(ZenParser& parser) {
           std::string classname = p2.readLine();
 
           // Save into vector
-          m_Materials.emplace_back(zCMaterial::readObjectData(p2, version));
+          m_Materials.emplace_back(zCMaterial::readObjectData(p2, mversion));
           }
 
         parser.setSeek(p2.getSeek() + parser.getSeek());
